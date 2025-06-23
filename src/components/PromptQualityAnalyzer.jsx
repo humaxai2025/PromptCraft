@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import LearnTab from './LearnTab'; // or the correct relative path
+
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
   Zap, Copy, Download, Share2, Coffee, MessageCircle, Wand2, BookOpen, 
