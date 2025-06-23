@@ -342,7 +342,7 @@ function PromptQualityAnalyzer() {
 
 
   const submitFeedback = () => {
-    alert('Feedback would be sent to humanxai2025@gmail.com');
+  
     setShowFeedback(false);
     setFeedback('');
   };
