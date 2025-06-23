@@ -5,6 +5,39 @@ import {
   Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X 
 } from 'lucide-react';
 
+// LearnTab Component (extracted pattern - in real app would be separate file)
+const LearnTab = ({ completedLessons, onLessonComplete, onTryExample, onNavigateToTemplates }) => {
+  return (
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Learn Prompt Engineering</h2>
+        <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
+          Master the art of prompt engineering with interactive lessons from beginner to advanced level.
+        </p>
+        <div className="max-w-md mx-auto mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-400">Your Progress</span>
+            <span className="text-sm text-purple-400 font-medium">{completedLessons.size}/6 lessons</span>
+          </div>
+          <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-1000 ease-out"
+              style={{ width: Math.round((completedLessons.size / 6) * 100) + '%' }}
+            />
+          </div>
+          <div className="text-center mt-2">
+            <span className="text-lg font-bold text-purple-400">{Math.round((completedLessons.size / 6) * 100)}%</span>
+            <span className="text-slate-400 text-sm ml-1">Complete</span>
+          </div>
+        </div>
+      </div>
+      <div className="text-center text-slate-400">
+        📚 LearnTab Component (Extracted) - Click "Try Example" buttons to test integration
+      </div>
+    </div>
+  );
+};
+
 function PromptQualityAnalyzer() {
   const [activeTab, setActiveTab] = useState('analyzer');
   const [prompt, setPrompt] = useState('');
@@ -16,6 +49,14 @@ function PromptQualityAnalyzer() {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [completedLessons, setCompletedLessons] = useState(() => {
+    try {
+      const saved = localStorage.getItem('promptAnalyzer_completedLessons');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
   const INDUSTRY_STANDARD = 85;
 
@@ -342,13 +383,16 @@ function PromptQualityAnalyzer() {
 
 
 
-  const submitFeedback = () => {
-  setShowFeedback(false); // close the modal
-  setFeedbackSubmitted(true); // show the notification
-  setTimeout(() => setFeedbackSubmitted(false), 3000); // hide after 3s
-  setFeedback(''); // clear the feedback text area AFTER the message (so modal feels "sticky")
-};
+  const getProgressPercentage = () => {
+    return Math.round((completedLessons.size / lessons.length) * 100);
+  };
 
+  const submitFeedback = () => {
+    setFeedbackSubmitted(true);
+    setShowFeedback(false);
+    setFeedback('');
+    setTimeout(() => setFeedbackSubmitted(false), 3000);
+  };
 
   useEffect(() => {
     setAnalysis(analyzePrompt(prompt));
@@ -374,7 +418,8 @@ function PromptQualityAnalyzer() {
 
   const tabs = [
     { id: 'analyzer', label: 'Analyzer', icon: Brain },
-    { id: 'templates', label: 'Templates', icon: BookOpen }
+    { id: 'learn', label: 'Learn', icon: BookOpen },
+    { id: 'templates', label: 'Templates', icon: Star }
   ];
 
   return (
@@ -647,6 +692,15 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             </div>
           )}
 
+          {activeTab === 'learn' && (
+            <LearnTab
+              completedLessons={completedLessons}
+              onLessonComplete={markLessonComplete}
+              onTryExample={tryExample}
+              onNavigateToTemplates={navigateToTemplates}
+            />
+          )}
+
           {activeTab === 'templates' && (
             <div className="space-y-8">
               <div className="text-center mb-8">
@@ -817,7 +871,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                 Cancel
               </button>
               <button
-                onClick={submitFeedback}
+                onClick={() => submitFeedback()}
                 disabled={!feedback.trim()}
                 className="flex-1 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-xl transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
               >
