@@ -11,6 +11,7 @@ function PromptQualityAnalyzer() {
   const [analysis, setAnalysis] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -342,10 +343,12 @@ function PromptQualityAnalyzer() {
 
 
   const submitFeedback = () => {
-  
-    setShowFeedback(false);
-    setFeedback('');
-  };
+  setShowFeedback(false); // close the modal
+  setFeedbackSubmitted(true); // show the notification
+  setTimeout(() => setFeedbackSubmitted(false), 3000); // hide after 3s
+  setFeedback(''); // clear the feedback text area AFTER the message (so modal feels "sticky")
+};
+
 
   useEffect(() => {
     setAnalysis(analyzePrompt(prompt));
@@ -764,6 +767,21 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             <CheckCircle className="w-5 h-5 text-green-200" />
             <span className="font-medium text-sm sm:text-base">✨ Copied to clipboard!</span>
             <div className="w-2 h-2 bg-green-300 rounded-full animate-ping" />
+          </div>
+        </div>
+      )}
+
+      {feedbackSubmitted && (
+        <div 
+          className="fixed top-6 right-6 z-50 transform transition-all duration-300 ease-out"
+          onClick={() => setFeedbackSubmitted(false)}
+        >
+          <div 
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl shadow-2xl backdrop-blur-sm border border-purple-400/30 flex items-center gap-3 hover:scale-105 transition-transform cursor-pointer"
+          >
+            <Heart className="w-5 h-5 text-purple-200" />
+            <span className="font-medium text-sm sm:text-base">💖 Feedback submitted!</span>
+            <div className="w-2 h-2 bg-purple-300 rounded-full animate-ping" />
           </div>
         </div>
       )}
