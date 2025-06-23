@@ -8,38 +8,6 @@ import {
 } from 'lucide-react';
 
 // LearnTab Component (extracted pattern - in real app would be separate file)
-const LearnTab = ({ completedLessons, onLessonComplete, onTryExample, onNavigateToTemplates }) => {
-
-  return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Learn Prompt Engineering</h2>
-        <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
-          Master the art of prompt engineering with interactive lessons from beginner to advanced level.
-        </p>
-        <div className="max-w-md mx-auto mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Your Progress</span>
-            <span className="text-sm text-purple-400 font-medium">{completedLessons.size}/6 lessons</span>
-          </div>
-          <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-1000 ease-out"
-              style={{ width: Math.round((completedLessons.size / 6) * 100) + '%' }}
-            />
-          </div>
-          <div className="text-center mt-2">
-            <span className="text-lg font-bold text-purple-400">{Math.round((completedLessons.size / 6) * 100)}%</span>
-            <span className="text-slate-400 text-sm ml-1">Complete</span>
-          </div>
-        </div>
-      </div>
-      <div className="text-center text-slate-400">
-        📚 LearnTab Component (Extracted) - Click "Try Example" buttons to test integration
-      </div>
-    </div>
-  );
-};
 
 function PromptQualityAnalyzer() {
   const [activeTab, setActiveTab] = useState('analyzer');
