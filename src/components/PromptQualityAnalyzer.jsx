@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import LearnTab from './LearnTab'; // or the correct relative path
+import LearnTab from './LearnTab';
+import HistoryTab from './HistoryTab';
 
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
   Zap, Copy, Download, Share2, Coffee, MessageCircle, Wand2, BookOpen, 
-  Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X 
+  Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X,
+  History
 } from 'lucide-react';
 
 function PromptQualityAnalyzer() {
@@ -26,6 +28,9 @@ function PromptQualityAnalyzer() {
       return new Set();
     }
   });
+
+  // History count for badge
+  const [historyCount, setHistoryCount] = useState(0);
 
   const INDUSTRY_STANDARD = 85;
 
@@ -85,9 +90,9 @@ function PromptQualityAnalyzer() {
     return [...new Set(categories)];
   };
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = async (text = prompt) => {
     try {
-      await navigator.clipboard.writeText(prompt);
+      await navigator.clipboard.writeText(text);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
@@ -100,6 +105,45 @@ function PromptQualityAnalyzer() {
     setActiveTab('analyzer');
     setMobileMenuOpen(false);
   };
+
+  // Handle loading prompt from history
+  const handleLoadFromHistory = (promptText) => {
+    setPrompt(promptText);
+    setActiveTab('analyzer');
+  };
+
+  // Handle copy success from history tab
+  const handleCopySuccess = () => {
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  // Update history count when localStorage changes
+  useEffect(() => {
+    const updateHistoryCount = () => {
+      try {
+        const saved = localStorage.getItem('promptAnalyzer_history');
+        const history = saved ? JSON.parse(saved) : [];
+        setHistoryCount(history.length);
+      } catch {
+        setHistoryCount(0);
+      }
+    };
+
+    // Initial count
+    updateHistoryCount();
+
+    // Listen for storage changes
+    window.addEventListener('storage', updateHistoryCount);
+    
+    // Set up periodic check (for same-tab updates)
+    const interval = setInterval(updateHistoryCount, 1000);
+
+    return () => {
+      window.removeEventListener('storage', updateHistoryCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   const analyzePrompt = (promptText) => {
     if (!promptText.trim()) return null;
@@ -358,7 +402,34 @@ function PromptQualityAnalyzer() {
   };
 
   useEffect(() => {
-    setAnalysis(analyzePrompt(prompt));
+    const newAnalysis = analyzePrompt(prompt);
+    setAnalysis(newAnalysis);
+    
+    // Auto-save to history when analysis is complete and prompt is substantial
+    if (newAnalysis && prompt.trim() && prompt.trim().length > 20) {
+      // Debounce to avoid saving every keystroke
+      const timeoutId = setTimeout(() => {
+        // Use the global function exposed by HistoryTab
+        if (window.saveToPromptHistory) {
+          // Get current history to check for duplicates
+          try {
+            const saved = localStorage.getItem('promptAnalyzer_history');
+            const currentHistory = saved ? JSON.parse(saved) : [];
+            const recentPrompts = currentHistory.slice(0, 3).map(item => item.prompt);
+            
+            // Only save if it's not already in recent history (avoid duplicates)
+            if (!recentPrompts.includes(prompt.trim())) {
+              window.saveToPromptHistory(prompt.trim(), newAnalysis);
+            }
+          } catch {
+            // Fallback: just save it
+            window.saveToPromptHistory(prompt.trim(), newAnalysis);
+          }
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timeoutId);
+    }
   }, [prompt]);
 
   const getScoreColor = (score) => {
@@ -382,7 +453,8 @@ function PromptQualityAnalyzer() {
   const tabs = [
     { id: 'analyzer', label: 'Analyzer', icon: Brain },
     { id: 'learn', label: 'Learn', icon: BookOpen },
-    { id: 'templates', label: 'Templates', icon: Star }
+    { id: 'templates', label: 'Templates', icon: Star },
+    { id: 'history', label: 'History', icon: History }
   ];
 
   function markLessonComplete(lessonId) {
@@ -407,7 +479,6 @@ function PromptQualityAnalyzer() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
 
-      
       <div className="relative z-10">
         <header className="bg-black/20 backdrop-blur-sm border-b border-white/10">
           <div className="container mx-auto px-4 py-4">
@@ -454,6 +525,11 @@ function PromptQualityAnalyzer() {
                   >
                     <tab.icon className="w-5 h-5" />
                     {tab.label}
+                    {tab.id === 'history' && historyCount > 0 && (
+                      <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                        {historyCount}
+                      </span>
+                    )}
                   </button>
                 )}
                 <div className="border-t border-white/10 pt-3">
@@ -481,7 +557,7 @@ function PromptQualityAnalyzer() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={'flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium ' + (
+                    className={'flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium relative ' + (
                       activeTab === tab.id 
                         ? 'bg-purple-600 text-white shadow-lg' 
                         : 'text-slate-300 hover:text-white hover:bg-white/10'
@@ -489,6 +565,11 @@ function PromptQualityAnalyzer() {
                   >
                     <tab.icon className="w-5 h-5" />
                     {tab.label}
+                    {tab.id === 'history' && historyCount > 0 && (
+                      <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full ml-1">
+                        {historyCount}
+                      </span>
+                    )}
                   </button>
                 )}
               </div>
@@ -529,7 +610,7 @@ function PromptQualityAnalyzer() {
                           </button>
                         )}
                         <button
-                          onClick={copyToClipboard}
+                          onClick={() => copyToClipboard()}
                           disabled={!prompt.trim()}
                           className="p-2 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-700 text-white rounded-lg transition-colors"
                           title="Copy prompt"
@@ -551,6 +632,9 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     {analysis && (
                       <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-slate-400">
                         <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences</span>
+                        {analysis.overallScore >= 70 && (
+                          <span className="text-green-400 text-xs">✓ Auto-saved to history</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -739,7 +823,6 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                         <div className="bg-slate-900/50 rounded-lg p-3 text-xs text-slate-400 font-mono max-h-20 overflow-hidden relative">
                           {template.template.slice(0, 120) + '...'}
                           <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
-
                         </div>
                         
                         <div className="mt-3 pt-3 border-t border-white/10">
@@ -758,7 +841,12 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             </div>
           )}
 
-
+          {activeTab === 'history' && (
+            <HistoryTab 
+              onLoadPrompt={handleLoadFromHistory}
+              onCopySuccess={handleCopySuccess}
+            />
+          )}
         </main>
 
         <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 backdrop-blur-sm border-t border-orange-500/20">
@@ -820,8 +908,6 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
           </div>
         </div>
       )}
-
-
 
       <button
         onClick={() => setShowFeedback(true)}
