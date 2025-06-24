@@ -7,8 +7,6 @@ import {
   Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X 
 } from 'lucide-react';
 
-// LearnTab Component (extracted pattern - in real app would be separate file)
-
 function PromptQualityAnalyzer() {
   const [activeTab, setActiveTab] = useState('analyzer');
   const [prompt, setPrompt] = useState('');
@@ -352,12 +350,6 @@ function PromptQualityAnalyzer() {
     }
   };
 
-
-
-  const getProgressPercentage = () => {
-    return Math.round((completedLessons.size / lessons.length) * 100);
-  };
-
   const submitFeedback = () => {
     setFeedbackSubmitted(true);
     setShowFeedback(false);
@@ -394,23 +386,22 @@ function PromptQualityAnalyzer() {
   ];
 
   function markLessonComplete(lessonId) {
-  setCompletedLessons(prev => {
-    const updated = new Set(prev);
-    updated.add(lessonId);
-    localStorage.setItem('promptAnalyzer_completedLessons', JSON.stringify(Array.from(updated)));
-    return updated;
-  });
-}
+    setCompletedLessons(prev => {
+      const updated = new Set(prev);
+      updated.add(lessonId);
+      localStorage.setItem('promptAnalyzer_completedLessons', JSON.stringify(Array.from(updated)));
+      return updated;
+    });
+  }
 
-function tryExample(exampleText) {
-  setPrompt(exampleText);
-  setActiveTab('analyzer');
-}
+  function tryExample(exampleText) {
+    setPrompt(exampleText);
+    setActiveTab('analyzer');
+  }
 
-function navigateToTemplates() {
-  setActiveTab('templates');
-}
-
+  function navigateToTemplates() {
+    setActiveTab('templates');
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
