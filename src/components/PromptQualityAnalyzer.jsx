@@ -6,7 +6,7 @@ import {
   Zap, Copy, Download, Share2, Coffee, MessageCircle, Wand2, BookOpen, 
   Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X,
   History, Search, Trash2, Calendar, Clock, Filter, Archive, ChevronDown, ChevronUp,
-  RotateCcw, SortDesc, SortAsc, Eye, EyeOff
+  RotateCcw, SortDesc, SortAsc, Eye, EyeOff, FileText, Tag, Bookmark
 } from 'lucide-react';
 
 function PromptQualityAnalyzer() {
@@ -39,9 +39,24 @@ function PromptQualityAnalyzer() {
     }
   });
   const [historySearchTerm, setHistorySearchTerm] = useState('');
-  const [historyFilter, setHistoryFilter] = useState('all'); // all, high, medium, low
-  const [historySortBy, setHistorySortBy] = useState('newest'); // newest, oldest, score-high, score-low
+  const [historyFilter, setHistoryFilter] = useState('all');
+  const [historySortBy, setHistorySortBy] = useState('newest');
   const [expandedHistoryItems, setExpandedHistoryItems] = useState(new Set());
+
+  // Favorites state
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('promptAnalyzer_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [favoritesSearchTerm, setFavoritesSearchTerm] = useState('');
+  const [favoritesFilterType, setFavoritesFilterType] = useState('all');
+  const [favoritesFilterCategory, setFavoritesFilterCategory] = useState('all');
+  const [favoritesSortBy, setFavoritesSortBy] = useState('newest');
+  const [expandedFavoriteItems, setExpandedFavoriteItems] = useState(new Set());
 
   const INDUSTRY_STANDARD = 85;
 
@@ -117,6 +132,54 @@ function PromptQualityAnalyzer() {
     setMobileMenuOpen(false);
   };
 
+  // Favorites functionality
+  const addToFavorites = (item, type = 'prompt') => {
+    const favoriteItem = {
+      id: Date.now() + Math.random(),
+      type: type,
+      title: type === 'prompt' 
+        ? (item.prompt ? item.prompt.slice(0, 50) + '...' : 'Untitled Prompt')
+        : item.name,
+      content: type === 'prompt' ? item.prompt : item.template,
+      analysis: type === 'prompt' ? item.analysis : null,
+      category: type === 'template' ? item.category : 'Custom',
+      description: type === 'template' ? item.description : '',
+      icon: type === 'template' ? item.icon : null,
+      timestamp: new Date().toISOString(),
+      tags: []
+    };
+
+    const updatedFavorites = [favoriteItem, ...favorites];
+    setFavorites(updatedFavorites);
+    localStorage.setItem('promptAnalyzer_favorites', JSON.stringify(updatedFavorites));
+    return favoriteItem.id;
+  };
+
+  const removeFromFavorites = (itemId) => {
+    const updatedFavorites = favorites.filter(item => item.id !== itemId);
+    setFavorites(updatedFavorites);
+    localStorage.setItem('promptAnalyzer_favorites', JSON.stringify(updatedFavorites));
+  };
+
+  const isFavorited = (content) => {
+    return favorites.some(fav => fav.content === content);
+  };
+
+  const toggleFavorite = (item, type = 'prompt') => {
+    const content = type === 'prompt' ? item.prompt : item.template;
+    
+    if (isFavorited(content)) {
+      const existingFav = favorites.find(fav => fav.content === content);
+      if (existingFav) {
+        removeFromFavorites(existingFav.id);
+        return false;
+      }
+    } else {
+      addToFavorites(item, type);
+      return true;
+    }
+  };
+
   // Save prompt to history
   const saveToHistory = (promptText, analysisData) => {
     if (!promptText.trim() || !analysisData) return;
@@ -129,7 +192,7 @@ function PromptQualityAnalyzer() {
       preview: promptText.slice(0, 100) + (promptText.length > 100 ? '...' : '')
     };
 
-    const updatedHistory = [historyItem, ...promptHistory].slice(0, 100); // Keep last 100 items
+    const updatedHistory = [historyItem, ...promptHistory].slice(0, 100);
     setPromptHistory(updatedHistory);
     localStorage.setItem('promptAnalyzer_history', JSON.stringify(updatedHistory));
   };
@@ -157,7 +220,6 @@ function PromptQualityAnalyzer() {
   const getFilteredHistory = () => {
     let filtered = promptHistory;
 
-    // Search filter
     if (historySearchTerm) {
       filtered = filtered.filter(item => 
         item.prompt.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
@@ -165,7 +227,6 @@ function PromptQualityAnalyzer() {
       );
     }
 
-    // Score filter
     if (historyFilter !== 'all') {
       filtered = filtered.filter(item => {
         const score = item.analysis.overallScore;
@@ -176,7 +237,6 @@ function PromptQualityAnalyzer() {
       });
     }
 
-    // Sort
     filtered = [...filtered].sort((a, b) => {
       switch (historySortBy) {
         case 'oldest':
@@ -194,6 +254,51 @@ function PromptQualityAnalyzer() {
     return filtered;
   };
 
+  // Favorites filtering
+  const getFavoritesCategories = () => {
+    const categories = favorites.map(item => item.category).filter(Boolean);
+    return [...new Set(categories)];
+  };
+
+  const getFilteredFavorites = () => {
+    let filtered = favorites;
+
+    if (favoritesSearchTerm) {
+      filtered = filtered.filter(item => 
+        item.title.toLowerCase().includes(favoritesSearchTerm.toLowerCase()) ||
+        item.content.toLowerCase().includes(favoritesSearchTerm.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(favoritesSearchTerm.toLowerCase()))
+      );
+    }
+
+    if (favoritesFilterType !== 'all') {
+      filtered = filtered.filter(item => item.type === favoritesFilterType);
+    }
+
+    if (favoritesFilterCategory !== 'all') {
+      filtered = filtered.filter(item => item.category === favoritesFilterCategory);
+    }
+
+    filtered = [...filtered].sort((a, b) => {
+      switch (favoritesSortBy) {
+        case 'oldest':
+          return new Date(a.timestamp) - new Date(b.timestamp);
+        case 'name':
+          return a.title.localeCompare(b.title);
+        case 'score':
+          if (a.analysis && b.analysis) {
+            return b.analysis.overallScore - a.analysis.overallScore;
+          }
+          return 0;
+        case 'newest':
+        default:
+          return new Date(b.timestamp) - new Date(a.timestamp);
+      }
+    });
+
+    return filtered;
+  };
+
   const toggleHistoryItem = (itemId) => {
     const newExpanded = new Set(expandedHistoryItems);
     if (newExpanded.has(itemId)) {
@@ -202,6 +307,16 @@ function PromptQualityAnalyzer() {
       newExpanded.add(itemId);
     }
     setExpandedHistoryItems(newExpanded);
+  };
+
+  const toggleFavoriteItem = (itemId) => {
+    const newExpanded = new Set(expandedFavoriteItems);
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId);
+    } else {
+      newExpanded.add(itemId);
+    }
+    setExpandedFavoriteItems(newExpanded);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -399,7 +514,6 @@ function PromptQualityAnalyzer() {
     
     let improved = false;
     
-    // Enhancement logic with proper string handling
     if (!optimized.toLowerCase().includes('senior') && !optimized.toLowerCase().includes('expert')) {
       if (optimized.toLowerCase().includes('you are')) {
         optimized = optimized.replace(
@@ -460,11 +574,8 @@ function PromptQualityAnalyzer() {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    // Auto-save to history when analysis is complete and prompt is substantial
     if (newAnalysis && prompt.trim() && prompt.trim().length > 20) {
-      // Debounce to avoid saving every keystroke
       const timeoutId = setTimeout(() => {
-        // Only save if it's not already in recent history (avoid duplicates)
         const recentPrompts = promptHistory.slice(0, 3).map(item => item.prompt);
         if (!recentPrompts.includes(prompt.trim())) {
           saveToHistory(prompt.trim(), newAnalysis);
@@ -497,7 +608,8 @@ function PromptQualityAnalyzer() {
     { id: 'analyzer', label: 'Analyzer', icon: Brain },
     { id: 'learn', label: 'Learn', icon: BookOpen },
     { id: 'templates', label: 'Templates', icon: Star },
-    { id: 'history', label: 'History', icon: History }
+    { id: 'history', label: 'History', icon: History },
+    { id: 'favorites', label: 'Favorites', icon: Heart }
   ];
 
   function markLessonComplete(lessonId) {
@@ -545,6 +657,17 @@ function PromptQualityAnalyzer() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => toggleFavorite({ prompt: item.prompt, analysis: item.analysis }, 'prompt')}
+            className={'p-2 rounded-lg transition-colors ' + (
+              isFavorited(item.prompt) 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-slate-600 hover:bg-slate-700 text-white'
+            )}
+            title={isFavorited(item.prompt) ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={'w-4 h-4 ' + (isFavorited(item.prompt) ? 'fill-current' : '')} />
+          </button>
           <button
             onClick={() => copyToClipboard(item.prompt)}
             className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
@@ -641,6 +764,141 @@ function PromptQualityAnalyzer() {
     </div>
   );
 
+  // Favorites Item Component (embedded version)
+  const FavoriteItem = ({ item, isExpanded, onToggle }) => (
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="p-2 bg-purple-600/20 rounded-lg flex-shrink-0">
+            {item.type === 'template' && item.icon ? (
+              React.createElement(item.icon, { className: "w-5 h-5 text-purple-400" })
+            ) : (
+              <MessageSquare className="w-5 h-5 text-purple-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-white text-sm sm:text-base font-medium truncate">{item.title}</h3>
+              <div className="flex items-center gap-1">
+                <Heart className="w-4 h-4 text-red-400 fill-red-400" />
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  item.type === 'prompt' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+                }`}>
+                  {item.type}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-slate-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatTimestamp(item.timestamp)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Tag className="w-3 h-3" />
+                {item.category}
+              </span>
+              {item.analysis && (
+                <span className="flex items-center gap-1">
+                  {getScoreIcon(item.analysis.overallScore)}
+                  Score: {item.analysis.overallScore}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => copyToClipboard(item.content)}
+            className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+            title="Copy content"
+          >
+            <Copy className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (item.type === 'prompt') {
+                setPrompt(item.content);
+                setActiveTab('analyzer');
+              } else {
+                applyTemplate({ template: item.content, name: item.title, category: item.category });
+              }
+            }}
+            className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            title="Load content"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onToggle(item.id)}
+            className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => removeFromFavorites(item.id)}
+            className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            title="Remove from favorites"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {item.description && (
+        <p className="text-slate-300 text-sm mb-4">{item.description}</p>
+      )}
+
+      {isExpanded && (
+        <div className="space-y-4 border-t border-white/10 pt-4">
+          <div className="bg-slate-800/50 rounded-xl p-4">
+            <h5 className="text-white font-medium mb-2 flex items-center gap-2">
+              {item.type === 'prompt' ? <MessageSquare className="w-4 h-4 text-purple-400" /> : <FileText className="w-4 h-4 text-purple-400" />}
+              {item.type === 'prompt' ? 'Prompt Content' : 'Template Content'}
+            </h5>
+            <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+              {item.content}
+            </pre>
+          </div>
+
+          {item.analysis && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="bg-slate-800/50 rounded-xl p-4">
+                <h5 className="text-white font-medium mb-3">Quality Scores</h5>
+                <div className="space-y-2">
+                  {Object.entries(item.analysis.scores).map(([key, score]) => (
+                    <div key={key} className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300 capitalize">{key}</span>
+                      <span className="text-white font-mono">{score}/100</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-xl p-4">
+                <h5 className="text-white font-medium mb-3">Statistics</h5>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Overall Score</span>
+                    <span className="text-white font-bold">{item.analysis.overallScore}/100</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Words</span>
+                    <span className="text-white">{item.analysis.stats.words}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Sentences</span>
+                    <span className="text-white">{item.analysis.stats.sentences}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
@@ -696,6 +954,11 @@ function PromptQualityAnalyzer() {
                         {promptHistory.length}
                       </span>
                     )}
+                    {tab.id === 'favorites' && favorites.length > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {favorites.length}
+                      </span>
+                    )}
                   </button>
                 )}
                 <div className="border-t border-white/10 pt-3">
@@ -736,6 +999,11 @@ function PromptQualityAnalyzer() {
                         {promptHistory.length}
                       </span>
                     )}
+                    {tab.id === 'favorites' && favorites.length > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">
+                        {favorites.length}
+                      </span>
+                    )}
                   </button>
                 )}
               </div>
@@ -760,6 +1028,19 @@ function PromptQualityAnalyzer() {
                         <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
                       </div>
                       <div className="flex gap-2">
+                        {prompt.trim() && analysis && (
+                          <button
+                            onClick={() => toggleFavorite({ prompt: prompt.trim(), analysis }, 'prompt')}
+                            className={'p-2 rounded-lg transition-colors ' + (
+                              isFavorited(prompt.trim()) 
+                                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                : 'bg-slate-600 hover:bg-slate-700 text-white'
+                            )}
+                            title={isFavorited(prompt.trim()) ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <Heart className={'w-4 h-4 ' + (isFavorited(prompt.trim()) ? 'fill-current' : '')} />
+                          </button>
+                        )}
                         {analysis && analysis.overallScore >= INDUSTRY_STANDARD ? (
                           <div className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium">
                             <CheckCircle className="w-4 h-4" />
@@ -960,6 +1241,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                   .filter(template => selectedCategory === 'All' || template.category === selectedCategory)
                   .map(template => {
                     const IconComponent = template.icon;
+                    const isTemplateFavorited = isFavorited(template.template);
                     return (
                       <div 
                         key={template.id} 
@@ -975,13 +1257,29 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                               <p className="text-xs text-purple-300 font-medium">{template.category}</p>
                             </div>
                           </div>
-                          <button
-                            onClick={() => applyTemplate(template)}
-                            className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm transition-all font-medium"
-                          >
-                            Use
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(template, 'template');
+                              }}
+                              className={'p-2 rounded-lg transition-colors ' + (
+                                isTemplateFavorited 
+                                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                  : 'bg-slate-600 hover:bg-slate-700 text-white'
+                              )}
+                              title={isTemplateFavorited ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Heart className={'w-4 h-4 ' + (isTemplateFavorited ? 'fill-current' : '')} />
+                            </button>
+                            <button
+                              onClick={() => applyTemplate(template)}
+                              className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm transition-all font-medium"
+                            >
+                              Use
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                         
                         <p className="text-slate-300 text-xs sm:text-sm mb-4">{template.description}</p>
@@ -1018,7 +1316,6 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
               
               {promptHistory.length > 0 ? (
                 <>
-                  {/* Search and Filter Controls */}
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="relative">
@@ -1076,7 +1373,6 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     </div>
                   </div>
 
-                  {/* History List */}
                   <div className="space-y-4">
                     {getFilteredHistory().length > 0 ? (
                       getFilteredHistory().map(item => (
@@ -1110,6 +1406,145 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     <Brain className="w-5 h-5" />
                     Start Analyzing
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'favorites' && (
+            <div className="space-y-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  <Heart className="w-8 h-8 text-red-400 inline-block mr-3 fill-red-400" />
+                  My Favorites
+                </h2>
+                <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
+                  Your bookmarked prompts and templates - quick access to your best content.
+                </p>
+              </div>
+              
+              {favorites.length > 0 ? (
+                <>
+                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search favorites..."
+                          value={favoritesSearchTerm}
+                          onChange={(e) => setFavoritesSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        />
+                      </div>
+                      
+                      <select
+                        value={favoritesFilterType}
+                        onChange={(e) => setFavoritesFilterType(e.target.value)}
+                        className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="prompt">Prompts Only</option>
+                        <option value="template">Templates Only</option>
+                      </select>
+
+                      <select
+                        value={favoritesFilterCategory}
+                        onChange={(e) => setFavoritesFilterCategory(e.target.value)}
+                        className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      >
+                        <option value="all">All Categories</option>
+                        {getFavoritesCategories().map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                      
+                      <select
+                        value={favoritesSortBy}
+                        onChange={(e) => setFavoritesSortBy(e.target.value)}
+                        className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      >
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="name">Name A-Z</option>
+                        <option value="score">Highest Score</option>
+                      </select>
+                      
+                      <button
+                        onClick={() => {
+                          setFavorites([]);
+                          localStorage.removeItem('promptAnalyzer_favorites');
+                        }}
+                        disabled={favorites.length === 0}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Clear All
+                      </button>
+                    </div>
+                    
+                    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Archive className="w-4 h-4" />
+                        {getFilteredFavorites().length} of {favorites.length} favorites
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        Last updated: {favorites.length > 0 ? formatTimestamp(favorites[0].timestamp) : 'Never'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-4 h-4" />
+                        {favorites.filter(f => f.type === 'prompt').length} prompts
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileText className="w-4 h-4" />
+                        {favorites.filter(f => f.type === 'template').length} templates
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {getFilteredFavorites().length > 0 ? (
+                      getFilteredFavorites().map(item => (
+                        <FavoriteItem
+                          key={item.id}
+                          item={item}
+                          isExpanded={expandedFavoriteItems.has(item.id)}
+                          onToggle={toggleFavoriteItem}
+                        />
+                      ))
+                    ) : (
+                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-white/10 text-center">
+                        <Search className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
+                        <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">No Results Found</h4>
+                        <p className="text-slate-500 text-sm sm:text-base">Try adjusting your search or filter criteria.</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-white/10 text-center">
+                  <Heart className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
+                  <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">No Favorites Yet</h4>
+                  <p className="text-slate-500 text-sm sm:text-base mb-6">
+                    Start favoriting prompts and templates by clicking the heart icon. Your best content will be saved here for quick access.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => setActiveTab('analyzer')}
+                      className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-all font-medium"
+                    >
+                      <Brain className="w-5 h-5" />
+                      Create Prompts
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('templates')}
+                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl transition-all font-medium"
+                    >
+                      <Star className="w-5 h-5" />
+                      Browse Templates
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
