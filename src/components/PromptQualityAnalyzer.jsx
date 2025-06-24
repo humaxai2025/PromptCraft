@@ -399,7 +399,7 @@ function PromptQualityAnalyzer() {
     
     let improved = false;
     
-    // 1. ROLE & EXPERTISE ENHANCEMENT
+    // Enhancement logic with proper string handling
     if (!optimized.toLowerCase().includes('senior') && !optimized.toLowerCase().includes('expert')) {
       if (optimized.toLowerCase().includes('you are')) {
         optimized = optimized.replace(
@@ -411,50 +411,34 @@ function PromptQualityAnalyzer() {
       }
       improved = true;
     }
-    
-    // 2. STRUCTURED OBJECTIVES
     else if (!optimized.includes('**Primary Objective') && !optimized.toLowerCase().includes('objective:')) {
       optimized += '\n\n**Primary Objective:** Deliver comprehensive, strategic analysis with actionable insights that exceed industry standards and drive measurable results.';
       improved = true;
     }
-    
-    // 3. METHODOLOGY & APPROACH
     else if (!optimized.includes('**Strategic Methodology') && !optimized.toLowerCase().includes('methodology:')) {
       optimized += '\n\n**Strategic Methodology:** Employ systematic, evidence-based analysis using proven frameworks and industry best practices to ensure optimal outcomes and professional excellence.';
       improved = true;
     }
-    
-    // 4. OUTPUT SPECIFICATIONS
     else if (!optimized.includes('**Output Requirements') && !optimized.toLowerCase().includes('deliverables:')) {
       optimized += '\n\n**Output Requirements:**\n• Executive summary with key insights and recommendations\n• Detailed analysis with supporting evidence and metrics\n• Specific, measurable, actionable recommendations\n• Implementation timeline with milestones and KPIs\n• Risk assessment and mitigation strategies\n• Professional presentation suitable for stakeholder review';
       improved = true;
     }
-    
-    // 5. CONTEXT & BUSINESS INTEGRATION
     else if (!optimized.includes('**Context Integration') && !optimized.toLowerCase().includes('stakeholder')) {
       optimized += '\n\n**Context Integration:** Incorporate current industry trends, market dynamics, regulatory environment, competitive landscape, and stakeholder requirements into all recommendations and analysis.';
       improved = true;
     }
-    
-    // 6. QUALITY & STANDARDS
     else if (!optimized.includes('**Quality Standards') && !optimized.toLowerCase().includes('excellence')) {
       optimized += '\n\n**Quality Standards:** Ensure all deliverables meet professional excellence criteria, industry best practices, and provide measurable business value with clear ROI justification.';
       improved = true;
     }
-    
-    // 7. SUCCESS METRICS
     else if (!optimized.includes('**Success Criteria') && !optimized.toLowerCase().includes('kpi') && !optimized.toLowerCase().includes('metrics')) {
       optimized += '\n\n**Success Criteria:** Define specific KPIs, performance benchmarks, and measurable outcomes with timeline-based milestones for tracking progress and ensuring accountability.';
       improved = true;
     }
-    
-    // 8. IMPLEMENTATION FOCUS
     else if (!optimized.includes('**Implementation Framework') && currentAnalysis.overallScore < 85) {
       optimized += '\n\n**Implementation Framework:** Provide detailed action plan with prioritized steps, resource requirements, responsible parties, timeline, and contingency strategies for seamless execution.';
       improved = true;
     }
-    
-    // 9. FINAL ENHANCEMENT - Add more professional terms if still below 85
     else if (currentAnalysis.overallScore < 85) {
       optimized += '\n\n**Professional Standards:** Maintain industry-leading quality throughout all analysis, ensure comprehensive evidence-based recommendations, and deliver strategic insights that drive optimal business outcomes.';
       improved = true;
@@ -636,7 +620,7 @@ function PromptQualityAnalyzer() {
             </div>
           </div>
 
-          {item.analysis.suggestions.length > 0 && (
+          {item.analysis.suggestions && item.analysis.suggestions.length > 0 && (
             <div className="bg-slate-800/50 rounded-xl p-4">
               <h5 className="text-white font-medium mb-3">Suggestions</h5>
               <div className="space-y-2">
@@ -979,7 +963,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     return (
                       <div 
                         key={template.id} 
-                        className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300 group cursor-pointer hover:transform hover:scale-[1.02]"
+                        className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300 group cursor-pointer hover:transform hover:scale-105"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3 flex-1">
@@ -1056,7 +1040,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                         <option value="all">All Scores</option>
                         <option value="high">High (80+)</option>
                         <option value="medium">Medium (60-79)</option>
-                        <option value="low">Low (<60)</option>
+                        <option value="low">Low (&lt;60)</option>
                       </select>
                       
                       <select
