@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
-  Zap, Copy, Heart, Wand2, Save, GitBranch, Clock
+  Zap, Copy, Heart, Wand2, Save
 } from 'lucide-react';
 
 const AnalyzerTab = ({ 
@@ -13,9 +13,6 @@ const AnalyzerTab = ({
   onToggleFavorite,
   isFavorited,
   onSaveToHistory,
-  onSaveAsNewVersion,
-  currentPromptId,
-  promptVersions,
   INDUSTRY_STANDARD = 85
 }) => {
   const getScoreColor = (score) => {
@@ -36,10 +33,6 @@ const AnalyzerTab = ({
     return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
-  // Get current prompt versions
-  const currentVersions = currentPromptId ? promptVersions.get(currentPromptId) || [] : [];
-  const hasVersions = currentVersions.length > 0;
-
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -58,7 +51,7 @@ const AnalyzerTab = ({
                 <MessageSquare className="w-6 h-6 text-purple-400" />
                 <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2">
                 {prompt.trim() && analysis && (
                   <button
                     onClick={() => onToggleFavorite({ prompt: prompt.trim(), analysis }, 'prompt')}
@@ -79,16 +72,6 @@ const AnalyzerTab = ({
                     title="Save to history"
                   >
                     <Save className="w-4 h-4" />
-                  </button>
-                )}
-                {prompt.trim() && analysis && (
-                  <button
-                    onClick={onSaveAsNewVersion}
-                    className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-                    title="Save as new version"
-                  >
-                    <GitBranch className="w-4 h-4" />
-                    {hasVersions ? `v${currentVersions.length + 1}` : 'v1'}
                   </button>
                 )}
                 {analysis && analysis.overallScore >= INDUSTRY_STANDARD ? (
@@ -135,38 +118,6 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
               </div>
             )}
           </div>
-
-          {/* Version History */}
-          {hasVersions && (
-            <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/20">
-              <div className="flex items-center gap-2 mb-3">
-                <GitBranch className="w-5 h-5 text-green-400" />
-                <h4 className="font-semibold text-white text-base sm:text-lg">Version History</h4>
-                <span className="text-green-400 text-xs bg-green-500/20 px-2 py-1 rounded-full">
-                  {currentVersions.length} versions
-                </span>
-              </div>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {currentVersions.map((version, index) => (
-                  <div key={version.id} className="flex items-center justify-between bg-white/5 rounded-lg p-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono bg-slate-700 text-slate-300 px-2 py-1 rounded">
-                        v{version.version}
-                      </span>
-                      <span className="text-sm text-white">{version.label}</span>
-                      <span className="text-xs text-slate-400">
-                        Score: {version.analysis.overallScore}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <Clock className="w-3 h-3" />
-                      {new Date(version.timestamp).toLocaleTimeString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Pro Tips */}
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/20">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save, MessageSquare, RotateCcw, Trash2, GitBranch } from 'lucide-react';
+import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save } from 'lucide-react';
 
 // Components
 import Header from './header';
@@ -53,16 +53,23 @@ function PromptQualityAnalyzer() {
     }
   };
 
+  // Manual save to history function
+  const saveToHistory = () => {
+    if (prompt.trim() && analysis) {
+      addToHistory(prompt.trim(), analysis);
+      setSavedToHistory(true);
+      setTimeout(() => setSavedToHistory(false), 2000);
+    }
+  };
+
   // Template application
   const applyTemplate = (template) => {
     setPrompt(template.template);
     setActiveTab('analyzer');
     setMobileMenuOpen(false);
-    // Reset versioning when applying template
-    setCurrentPromptId(null);
   };
 
-  // Optimization handler - simplified to just optimize the current prompt
+  // Optimization handler
   const handleOptimize = () => {
     if (!prompt.trim()) return;
     
@@ -76,8 +83,6 @@ function PromptQualityAnalyzer() {
   const handleLoadPrompt = (promptText) => {
     setPrompt(promptText);
     setActiveTab('analyzer');
-    // Reset versioning when loading a new prompt
-    setCurrentPromptId(null);
   };
 
   // Feedback submission
@@ -92,24 +97,10 @@ function PromptQualityAnalyzer() {
   const tryExample = (exampleText) => {
     setPrompt(exampleText);
     setActiveTab('analyzer');
-    // Reset versioning when trying example
-    setCurrentPromptId(null);
   };
 
   const navigateToTemplates = () => {
     setActiveTab('templates');
-  };
-
-  // Manual save to history function
-  const saveToHistory = () => {
-    if (prompt.trim() && analysis) {
-      console.log('🔍 Manual save triggered:', { prompt: prompt.trim(), score: analysis.overallScore });
-      addToHistory(prompt.trim(), analysis);
-      setSavedToHistory(true);
-      setTimeout(() => setSavedToHistory(false), 2000);
-    } else {
-      console.log('❌ Cannot save - missing prompt or analysis:', { hasPrompt: !!prompt.trim(), hasAnalysis: !!analysis });
-    }
   };
 
   // Real-time analysis effect
@@ -117,42 +108,18 @@ function PromptQualityAnalyzer() {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    console.log('📊 Analysis updated:', { prompt: prompt.slice(0, 50), score: newAnalysis?.overallScore });
-    
-    // Auto-save to history for decent prompts (50+ score to test)
+    // Auto-save to history for decent prompts (50+ score)
     if (newAnalysis && prompt.trim() && prompt.trim().length > 10 && newAnalysis.overallScore >= 50) {
-      console.log('⏰ Setting timeout for auto-save...');
       const timeoutId = setTimeout(() => {
         const recentPrompts = history.slice(0, 3).map(item => item.prompt);
         if (!recentPrompts.includes(prompt.trim())) {
-          console.log('💾 Auto-saving to history:', newAnalysis.overallScore);
           addToHistory(prompt.trim(), newAnalysis);
-        } else {
-          console.log('⚠️ Prompt already in recent history, skipping auto-save');
         }
-      }, 1000); // Reduced to 1 second for testing
+      }, 1000);
       
-      return () => {
-        console.log('🧹 Clearing timeout');
-        clearTimeout(timeoutId);
-      };
-    } else {
-      console.log('❌ Auto-save conditions not met:', {
-        hasAnalysis: !!newAnalysis,
-        hasPrompt: !!prompt.trim(),
-        promptLength: prompt.trim().length,
-        score: newAnalysis?.overallScore
-      });
+      return () => clearTimeout(timeoutId);
     }
   }, [prompt, history, addToHistory]);
-
-  // Debug history changes
-  useEffect(() => {
-    console.log('📚 History updated, count:', history.length);
-    if (history.length > 0) {
-      console.log('Latest history item:', history[0]);
-    }
-  }, [history]);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -168,9 +135,6 @@ function PromptQualityAnalyzer() {
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
             onSaveToHistory={saveToHistory}
-            onSaveAsNewVersion={saveAsNewVersion}
-            currentPromptId={currentPromptId}
-            promptVersions={promptVersions}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
