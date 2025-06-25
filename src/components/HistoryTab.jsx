@@ -8,8 +8,10 @@ import { usePromptHistory, useFavorites } from '../hooks/useLocalStorage';
 
 const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
   const { history, removeFromHistory, clearHistory } = usePromptHistory();
-  const { toggleFavorite, isFavorited } = useFavorites();
   
+  console.log('🔍 HistoryTab render - history count:', history.length);
+  console.log('📚 Full history data:', history);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
@@ -33,12 +35,6 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
     return <XCircle className="w-5 h-5 text-red-400" />;
   };
 
-  const getSuggestionIcon = (type) => {
-    if (type === 'error') return <XCircle className="w-4 h-4 text-red-400" />;
-    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
-    return <Lightbulb className="w-4 h-4 text-blue-400" />;
-  };
-
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -48,7 +44,9 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
     }
   };
 
+  // Debug the filtering
   const getFilteredHistory = () => {
+    console.log('🔎 Filtering history...');
     let filtered = history;
 
     if (searchTerm) {
@@ -82,6 +80,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
       }
     });
 
+    console.log('✅ Filtered history count:', filtered.length);
     return filtered;
   };
 
@@ -95,139 +94,6 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
     setExpandedItems(newExpanded);
   };
 
-  const HistoryItem = ({ item, isExpanded, onToggle }) => (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={'p-2 rounded-lg flex-shrink-0 ' + (
-            item.analysis.overallScore >= 80 ? 'bg-green-600/20' :
-            item.analysis.overallScore >= 60 ? 'bg-yellow-600/20' : 'bg-red-600/20'
-          )}>
-            {getScoreIcon(item.analysis.overallScore)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-white text-sm sm:text-base font-medium truncate">{item.preview}</p>
-            <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatTimestamp(item.timestamp)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Target className="w-3 h-3" />
-                Score: {item.analysis.overallScore}
-              </span>
-              <span>{item.analysis.stats.words} words</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => toggleFavorite({ prompt: item.prompt, analysis: item.analysis }, 'prompt')}
-            className={'p-2 rounded-lg transition-colors ' + (
-              isFavorited(item.prompt) 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-slate-600 hover:bg-slate-700 text-white'
-            )}
-            title={isFavorited(item.prompt) ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart className={'w-4 h-4 ' + (isFavorited(item.prompt) ? 'fill-current' : '')} />
-          </button>
-          <button
-            onClick={() => copyToClipboard(item.prompt)}
-            className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            title="Copy prompt"
-          >
-            <Copy className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onLoadPrompt(item.prompt)}
-            className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-            title="Load prompt"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onToggle(item.id)}
-            className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            title={isExpanded ? "Collapse" : "Expand"}
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => removeFromHistory(item.id)}
-            className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="space-y-4 border-t border-white/10 pt-4">
-          <div className="bg-slate-800/50 rounded-xl p-4">
-            <h5 className="text-white font-medium mb-2 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-purple-400" />
-              Full Prompt
-            </h5>
-            <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
-              {item.prompt}
-            </pre>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-slate-800/50 rounded-xl p-4">
-              <h5 className="text-white font-medium mb-3">Score Breakdown</h5>
-              <div className="space-y-2">
-                {Object.entries(item.analysis.scores).map(([key, score]) => (
-                  <div key={key} className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 capitalize">{key}</span>
-                    <span className="text-white font-mono">{score}/100</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 rounded-xl p-4">
-              <h5 className="text-white font-medium mb-3">Statistics</h5>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-300">Words</span>
-                  <span className="text-white">{item.analysis.stats.words}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-300">Sentences</span>
-                  <span className="text-white">{item.analysis.stats.sentences}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-300">Characters</span>
-                  <span className="text-white">{item.analysis.stats.characters}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {item.analysis.suggestions && item.analysis.suggestions.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-4">
-              <h5 className="text-white font-medium mb-3">Suggestions</h5>
-              <div className="space-y-2">
-                {item.analysis.suggestions.map((suggestion, index) => (
-                  <div key={index} className="flex items-start gap-2 text-xs">
-                    {getSuggestionIcon(suggestion.type)}
-                    <div>
-                      <span className="text-white font-medium">{suggestion.category}:</span>
-                      <span className="text-slate-300 ml-1">{suggestion.text}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -235,6 +101,22 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
         <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
           Review, reuse, and organize all your analyzed prompts with detailed insights.
         </p>
+        
+        {/* Debug Info */}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+          <h3 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h3>
+          <p className="text-yellow-300 text-sm">
+            Total history items: <strong>{history.length}</strong>
+          </p>
+          <p className="text-yellow-300 text-sm">
+            Filtered items: <strong>{getFilteredHistory().length}</strong>
+          </p>
+          {history.length > 0 && (
+            <p className="text-yellow-300 text-sm">
+              Latest item score: <strong>{history[0]?.analysis?.overallScore}</strong>
+            </p>
+          )}
+        </div>
       </div>
       
       {history.length > 0 ? (
@@ -283,28 +165,71 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
                 Clear All
               </button>
             </div>
-            
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-400">
-              <span className="flex items-center gap-1">
-                <Archive className="w-4 h-4" />
-                {getFilteredHistory().length} of {history.length} prompts
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Last updated: {history.length > 0 ? formatTimestamp(history[0].timestamp) : 'Never'}
-              </span>
-            </div>
           </div>
 
           <div className="space-y-4">
             {getFilteredHistory().length > 0 ? (
               getFilteredHistory().map(item => (
-                <HistoryItem
-                  key={item.id}
-                  item={item}
-                  isExpanded={expandedItems.has(item.id)}
-                  onToggle={toggleItem}
-                />
+                <div key={item.id} className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={'p-2 rounded-lg flex-shrink-0 ' + (
+                        item.analysis.overallScore >= 80 ? 'bg-green-600/20' :
+                        item.analysis.overallScore >= 60 ? 'bg-yellow-600/20' : 'bg-red-600/20'
+                      )}>
+                        {getScoreIcon(item.analysis.overallScore)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white text-sm sm:text-base font-medium truncate">{item.preview}</p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatTimestamp(item.timestamp)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3" />
+                            Score: {item.analysis.overallScore}
+                          </span>
+                          <span>{item.analysis.stats.words} words</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => copyToClipboard(item.prompt)}
+                        className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                        title="Copy prompt"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onLoadPrompt(item.prompt)}
+                        className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                        title="Load prompt"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => removeFromHistory(item.id)}
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Simple prompt display */}
+                  <div className="bg-slate-800/50 rounded-xl p-4">
+                    <h5 className="text-white font-medium mb-2 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-purple-400" />
+                      Full Prompt
+                    </h5>
+                    <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                      {item.prompt}
+                    </pre>
+                  </div>
+                </div>
               ))
             ) : (
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-white/10 text-center">

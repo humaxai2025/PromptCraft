@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save } from 'lucide-react';
+import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save, MessageSquare, RotateCcw, Trash2 } from 'lucide-react';
 
 // Components
 import Header from './header';
@@ -97,16 +97,12 @@ function PromptQualityAnalyzer() {
   // Manual save to history function
   const saveToHistory = () => {
     if (prompt.trim() && analysis) {
-      const recentPrompts = history.slice(0, 3).map(item => item.prompt);
-      if (!recentPrompts.includes(prompt.trim())) {
-        addToHistory(prompt.trim(), analysis);
-        console.log('✅ Prompt manually saved to history!', analysis.overallScore);
-        // Show success feedback
-        setSavedToHistory(true);
-        setTimeout(() => setSavedToHistory(false), 2000);
-      } else {
-        console.log('⚠️ Prompt already exists in recent history');
-      }
+      console.log('🔍 Manual save triggered:', { prompt: prompt.trim(), score: analysis.overallScore });
+      addToHistory(prompt.trim(), analysis);
+      setSavedToHistory(true);
+      setTimeout(() => setSavedToHistory(false), 2000);
+    } else {
+      console.log('❌ Cannot save - missing prompt or analysis:', { hasPrompt: !!prompt.trim(), hasAnalysis: !!analysis });
     }
   };
 
@@ -115,19 +111,42 @@ function PromptQualityAnalyzer() {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    // Auto-save to history for good prompts (70+ score) - not too restrictive
-    if (newAnalysis && prompt.trim() && prompt.trim().length > 20 && newAnalysis.overallScore >= 70) {
+    console.log('📊 Analysis updated:', { prompt: prompt.slice(0, 50), score: newAnalysis?.overallScore });
+    
+    // Auto-save to history for decent prompts (50+ score to test)
+    if (newAnalysis && prompt.trim() && prompt.trim().length > 10 && newAnalysis.overallScore >= 50) {
+      console.log('⏰ Setting timeout for auto-save...');
       const timeoutId = setTimeout(() => {
         const recentPrompts = history.slice(0, 3).map(item => item.prompt);
         if (!recentPrompts.includes(prompt.trim())) {
+          console.log('💾 Auto-saving to history:', newAnalysis.overallScore);
           addToHistory(prompt.trim(), newAnalysis);
-          console.log('✅ Prompt auto-saved to history!', newAnalysis.overallScore);
+        } else {
+          console.log('⚠️ Prompt already in recent history, skipping auto-save');
         }
-      }, 2000);
+      }, 1000); // Reduced to 1 second for testing
       
-      return () => clearTimeout(timeoutId);
+      return () => {
+        console.log('🧹 Clearing timeout');
+        clearTimeout(timeoutId);
+      };
+    } else {
+      console.log('❌ Auto-save conditions not met:', {
+        hasAnalysis: !!newAnalysis,
+        hasPrompt: !!prompt.trim(),
+        promptLength: prompt.trim().length,
+        score: newAnalysis?.overallScore
+      });
     }
   }, [prompt, history, addToHistory]);
+
+  // Debug history changes
+  useEffect(() => {
+    console.log('📚 History updated, count:', history.length);
+    if (history.length > 0) {
+      console.log('Latest history item:', history[0]);
+    }
+  }, [history]);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -159,11 +178,109 @@ function PromptQualityAnalyzer() {
         );
       
       case 'history':
+        // Debug HistoryTab inline - using the existing history from the hook
+        console.log('🔍 HistoryTab render - history count:', history.length);
+        console.log('📚 Full history data:', history);
+        
         return (
-          <HistoryTab
-            onLoadPrompt={handleLoadPrompt}
-            onCopySuccess={() => setCopySuccess(true)}
-          />
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Prompt History</h2>
+              <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
+                Review, reuse, and organize all your analyzed prompts with detailed insights.
+              </p>
+              
+              {/* Debug Info */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <h3 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h3>
+                <p className="text-yellow-300 text-sm">
+                  Total history items: <strong>{history.length}</strong>
+                </p>
+                {history.length > 0 && (
+                  <p className="text-yellow-300 text-sm">
+                    Latest item score: <strong>{history[0]?.analysis?.overallScore}</strong>
+                  </p>
+                )}
+                <button
+                  onClick={() => {
+                    console.log('🧪 Manual test save to history');
+                    addToHistory('Test prompt for debugging', { 
+                      overallScore: 75, 
+                      scores: { clarity: 70, context: 75, structure: 80, specificity: 70, instructions: 75 },
+                      suggestions: [],
+                      stats: { words: 5, sentences: 1, characters: 25 } 
+                    });
+                  }}
+                  className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                >
+                  Test Save to History
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('🧹 Clearing all history');
+                    clearHistory();
+                  }}
+                  className="mt-2 ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+                >
+                  Clear History
+                </button>
+              </div>
+            </div>
+            
+            {history.length > 0 ? (
+              <div className="space-y-4">
+                {history.map(item => (
+                  <div key={item.id} className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-purple-600/20 rounded-lg flex-shrink-0">
+                          <MessageSquare className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-sm sm:text-base font-medium">{item.preview || item.prompt.slice(0, 100)}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
+                            <span>Score: {item.analysis.overallScore}</span>
+                            <span>{item.analysis.stats.words} words</span>
+                            <span>{new Date(item.timestamp).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleLoadPrompt(item.prompt)}
+                          className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                          title="Load prompt"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => removeFromHistory(item.id)}
+                          className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-xl p-4">
+                      <h5 className="text-white font-medium mb-2">Full Prompt</h5>
+                      <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3">
+                        {item.prompt}
+                      </pre>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-white/10 text-center">
+                <History className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
+                <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">No History Yet</h4>
+                <p className="text-slate-500 text-sm sm:text-base mb-6">
+                  Start analyzing prompts to build your history. Prompts are automatically saved when analyzed.
+                </p>
+              </div>
+            )}
+          </div>
         );
       
       case 'favorites':
