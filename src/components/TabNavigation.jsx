@@ -17,13 +17,16 @@ const TabNavigation = ({
   onShowFeedback,
   setMobileMenuOpen
 }) => {
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    if (setMobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
   const TabButton = ({ tab, isMobile = false }) => (
     <button
-      key={tab.id}
-      onClick={() => {
-        setActiveTab(tab.id);
-        if (isMobile) setMobileMenuOpen(false);
-      }}
+      onClick={() => handleTabClick(tab.id)}
       className={`${isMobile ? 'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all' : 'flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium relative'} ${
         activeTab === tab.id 
           ? 'bg-purple-600 text-white shadow-lg' 
@@ -47,14 +50,16 @@ const TabNavigation = ({
 
   return (
     <>
-      {/* Mobile Menu Content */}
+      {/* Mobile Menu Content - only shown when called from Header */}
       <div className="container mx-auto px-4 py-4 space-y-3 md:hidden">
-        {tabs.map(tab => <TabButton key={tab.id} tab={tab} isMobile />)}
+        {tabs.map(tab => (
+          <TabButton key={`mobile-${tab.id}`} tab={tab} isMobile={true} />
+        ))}
         <div className="border-t border-white/10 pt-3">
           <button
             onClick={() => {
               onShowFeedback();
-              setMobileMenuOpen(false);
+              if (setMobileMenuOpen) setMobileMenuOpen(false);
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-white/10 rounded-lg transition-colors"
           >
@@ -69,7 +74,9 @@ const TabNavigation = ({
         <div className="container mx-auto px-4">
           <div className="flex justify-center">
             <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
-              {tabs.map(tab => <TabButton key={tab.id} tab={tab} />)}
+              {tabs.map(tab => (
+                <TabButton key={`desktop-${tab.id}`} tab={tab} isMobile={false} />
+              ))}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee } from 'lucide-react';
+import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen } from 'lucide-react';
 
 // Components
 import Header from './header';
@@ -181,25 +181,91 @@ function PromptQualityAnalyzer() {
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
         >
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            historyCount={history.length}
-            favoritesCount={favorites.length}
-            onShowFeedback={() => setShowFeedback(true)}
-            setMobileMenuOpen={setMobileMenuOpen}
-          />
+          {/* Mobile Menu Content */}
+          <div className="container mx-auto px-4 py-4 space-y-3">
+            {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
+              <button
+                key={tabId}
+                onClick={() => {
+                  setActiveTab(tabId);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  activeTab === tabId 
+                    ? 'bg-purple-600 text-white shadow-lg' 
+                    : 'text-slate-300 hover:bg-white/10'
+                }`}
+              >
+                {tabId === 'analyzer' && <Brain className="w-5 h-5" />}
+                {tabId === 'templates' && <Star className="w-5 h-5" />}
+                {tabId === 'history' && <History className="w-5 h-5" />}
+                {tabId === 'favorites' && <Heart className="w-5 h-5" />}
+                {tabId === 'learn' && <BookOpen className="w-5 h-5" />}
+                <span className="capitalize">{tabId}</span>
+                {tabId === 'history' && history.length > 0 && (
+                  <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                    {history.length}
+                  </span>
+                )}
+                {tabId === 'favorites' && favorites.length > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    {favorites.length}
+                  </span>
+                )}
+              </button>
+            ))}
+            <div className="border-t border-white/10 pt-3">
+              <button
+                onClick={() => {
+                  setShowFeedback(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Send Feedback
+              </button>
+            </div>
+          </div>
         </Header>
 
         {/* Desktop Navigation */}
-        <TabNavigation
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          historyCount={history.length}
-          favoritesCount={favorites.length}
-          onShowFeedback={() => setShowFeedback(true)}
-          setMobileMenuOpen={setMobileMenuOpen}
-        />
+        <div className="hidden md:block bg-black/10 backdrop-blur-sm border-b border-white/10">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center">
+              <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
+                {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
+                  <button
+                    key={tabId}
+                    onClick={() => setActiveTab(tabId)}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium ${
+                      activeTab === tabId 
+                        ? 'bg-purple-600 text-white shadow-lg' 
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {tabId === 'analyzer' && <Brain className="w-5 h-5" />}
+                    {tabId === 'templates' && <Star className="w-5 h-5" />}
+                    {tabId === 'history' && <History className="w-5 h-5" />}
+                    {tabId === 'favorites' && <Heart className="w-5 h-5" />}
+                    {tabId === 'learn' && <BookOpen className="w-5 h-5" />}
+                    <span className="capitalize">{tabId}</span>
+                    {tabId === 'history' && history.length > 0 && (
+                      <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full ml-1">
+                        {history.length}
+                      </span>
+                    )}
+                    {tabId === 'favorites' && favorites.length > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">
+                        {favorites.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 max-w-7xl">
