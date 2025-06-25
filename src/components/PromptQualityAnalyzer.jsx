@@ -6,7 +6,6 @@ import Header from './header';
 import TabNavigation from './TabNavigation';
 import AnalyzerTab from './AnalyzerTab';
 import LearnTab from './LearnTab';
-import ComparisonTab from './ComparisonTab';
 import TemplatesTab from './TemplatesTab';
 import HistoryTab from './HistoryTab';
 import FavoritesTab from './FavoritesTab';
@@ -36,14 +35,6 @@ function PromptQualityAnalyzer() {
   
   // Templates
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  // Simplified comparison state
-  const [comparisonData, setComparisonData] = useState({
-    originalPrompt: null,
-    optimizedPrompt: null,
-    originalAnalysis: null,
-    optimizedAnalysis: null
-  });
 
   // Custom hooks
   const { history, addToHistory, removeFromHistory, clearHistory } = usePromptHistory();
@@ -66,58 +57,22 @@ function PromptQualityAnalyzer() {
     setPrompt(template.template);
     setActiveTab('analyzer');
     setMobileMenuOpen(false);
-    // Clear comparison when applying template
-    setComparisonData({
-      originalPrompt: null,
-      optimizedPrompt: null,
-      originalAnalysis: null,
-      optimizedAnalysis: null
-    });
   };
 
-  // Simplified optimization handler
+  // Optimization handler - simplified to just optimize the current prompt
   const handleOptimize = () => {
     if (!prompt.trim()) return;
     
     const optimizationResult = optimizePrompt(prompt, INDUSTRY_STANDARD);
     
     if (optimizationResult) {
-      // Simple before/after comparison
-      const comparisonResult = {
-        originalPrompt: prompt.trim(),
-        optimizedPrompt: optimizationResult.optimizedPrompt,
-        originalAnalysis: analyzePrompt(prompt.trim()),
-        optimizedAnalysis: analyzePrompt(optimizationResult.optimizedPrompt)
-      };
-      
-      setComparisonData(comparisonResult);
       setPrompt(optimizationResult.optimizedPrompt);
-      
-      console.log('Optimization complete! Comparison available.');
     }
-  };
-
-  // Comparison tab handlers
-  const handleAcceptOptimized = (optimizedPrompt) => {
-    setPrompt(optimizedPrompt);
-    setActiveTab('analyzer');
-  };
-
-  const handleRevertToOriginal = (originalPrompt) => {
-    setPrompt(originalPrompt);
-    setActiveTab('analyzer');
   };
 
   const handleLoadPrompt = (promptText) => {
     setPrompt(promptText);
     setActiveTab('analyzer');
-    // Clear comparison when loading new prompt
-    setComparisonData({
-      originalPrompt: null,
-      optimizedPrompt: null,
-      originalAnalysis: null,
-      optimizedAnalysis: null
-    });
   };
 
   // Feedback submission
@@ -132,13 +87,6 @@ function PromptQualityAnalyzer() {
   const tryExample = (exampleText) => {
     setPrompt(exampleText);
     setActiveTab('analyzer');
-    // Clear comparison when trying example
-    setComparisonData({
-      originalPrompt: null,
-      optimizedPrompt: null,
-      originalAnalysis: null,
-      optimizedAnalysis: null
-    });
   };
 
   const navigateToTemplates = () => {
@@ -179,30 +127,6 @@ function PromptQualityAnalyzer() {
           />
         );
       
-      case 'comparison':
-        return (
-          <ComparisonTab
-            originalPrompt={comparisonData.originalPrompt}
-            optimizedPrompt={comparisonData.optimizedPrompt}
-            originalAnalysis={comparisonData.originalAnalysis}
-            optimizedAnalysis={comparisonData.optimizedAnalysis}
-            onAcceptOptimized={handleAcceptOptimized}
-            onRevertToOriginal={handleRevertToOriginal}
-            onCopySuccess={() => setCopySuccess(true)}
-            onLoadPrompt={handleLoadPrompt}
-          />
-        );
-      
-      case 'learn':
-        return (
-          <LearnTab
-            completedLessons={completedLessons}
-            onLessonComplete={markLessonComplete}
-            onTryExample={tryExample}
-            onNavigateToTemplates={navigateToTemplates}
-          />
-        );
-      
       case 'templates':
         return (
           <TemplatesTab
@@ -231,6 +155,16 @@ function PromptQualityAnalyzer() {
           />
         );
       
+      case 'learn':
+        return (
+          <LearnTab
+            completedLessons={completedLessons}
+            onLessonComplete={markLessonComplete}
+            onTryExample={tryExample}
+            onNavigateToTemplates={navigateToTemplates}
+          />
+        );
+      
       default:
         return null;
     }
@@ -250,28 +184,22 @@ function PromptQualityAnalyzer() {
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            comparisonData={comparisonData}
             historyCount={history.length}
             favoritesCount={favorites.length}
             onShowFeedback={() => setShowFeedback(true)}
             setMobileMenuOpen={setMobileMenuOpen}
-            isMobile={true}
           />
         </Header>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:block">
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            comparisonData={comparisonData}
-            historyCount={history.length}
-            favoritesCount={favorites.length}
-            onShowFeedback={() => setShowFeedback(true)}
-            setMobileMenuOpen={setMobileMenuOpen}
-            isMobile={false}
-          />
-        </div>
+        <TabNavigation
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          historyCount={history.length}
+          favoritesCount={favorites.length}
+          onShowFeedback={() => setShowFeedback(true)}
+          setMobileMenuOpen={setMobileMenuOpen}
+        />
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 max-w-7xl">
