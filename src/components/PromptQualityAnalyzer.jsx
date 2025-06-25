@@ -10,7 +10,7 @@ import ComparisonTab from './ComparisonTab';
 import TemplatesTab from './TemplatesTab';
 import HistoryTab from './HistoryTab';
 import FavoritesTab from './FavoritesTab';
-import FeedbackModal from './FeebackModal';
+import FeedbackModal from './FeedbackModal';
 import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notification';
 
 // Hooks and Utils
