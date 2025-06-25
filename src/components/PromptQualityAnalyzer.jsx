@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import LearnTab from './LearnTab';
+import ComparisonTab from './ComparisonTab';
 
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
   Zap, Copy, Download, Share2, Coffee, MessageCircle, Wand2, BookOpen, 
   Sparkles, ArrowRight, Send, Heart, Star, Code, PenTool, BarChart3, Mail, Menu, X,
   History, Search, Trash2, Calendar, Clock, Filter, Archive, ChevronDown, ChevronUp,
-  RotateCcw, SortDesc, SortAsc, Eye, EyeOff, FileText, Tag, Bookmark
+  RotateCcw, SortDesc, SortAsc, Eye, EyeOff, FileText, Tag, Bookmark, GitCompare
 } from 'lucide-react';
 
 function PromptQualityAnalyzer() {
@@ -18,6 +19,14 @@ function PromptQualityAnalyzer() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  // Comparison state
+  const [comparisonData, setComparisonData] = useState({
+    originalPrompt: null,
+    optimizedPrompt: null,
+    originalAnalysis: null,
+    optimizedAnalysis: null
+  });
 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [completedLessons, setCompletedLessons] = useState(() => {
@@ -505,13 +514,21 @@ function PromptQualityAnalyzer() {
   const optimizePrompt = () => {
     if (!prompt.trim()) return;
     
-    let optimized = prompt;
     const currentAnalysis = analyzePrompt(prompt);
     
     if (currentAnalysis.overallScore >= INDUSTRY_STANDARD) {
       return;
     }
     
+    // Store original state for comparison
+    setComparisonData({
+      originalPrompt: prompt,
+      originalAnalysis: currentAnalysis,
+      optimizedPrompt: null,
+      optimizedAnalysis: null
+    });
+    
+    let optimized = prompt;
     let improved = false;
     
     if (!optimized.toLowerCase().includes('senior') && !optimized.toLowerCase().includes('expert')) {
@@ -559,8 +576,36 @@ function PromptQualityAnalyzer() {
     }
     
     if (improved) {
+      const optimizedAnalysis = analyzePrompt(optimized.trim());
+      
+      // Update comparison data with optimized version
+      setComparisonData(prev => ({
+        ...prev,
+        optimizedPrompt: optimized.trim(),
+        optimizedAnalysis: optimizedAnalysis
+      }));
+      
       setPrompt(optimized.trim());
+      
+      // Switch to comparison tab to show results
+      setActiveTab('comparison');
     }
+  };
+
+  // Comparison tab handlers
+  const handleAcceptOptimized = (optimizedPrompt) => {
+    setPrompt(optimizedPrompt);
+    setActiveTab('analyzer');
+  };
+
+  const handleRevertToOriginal = (originalPrompt) => {
+    setPrompt(originalPrompt);
+    setActiveTab('analyzer');
+  };
+
+  const handleLoadPrompt = (promptText) => {
+    setPrompt(promptText);
+    setActiveTab('analyzer');
   };
 
   const submitFeedback = () => {
@@ -606,6 +651,7 @@ function PromptQualityAnalyzer() {
 
   const tabs = [
     { id: 'analyzer', label: 'Analyzer', icon: Brain },
+    { id: 'comparison', label: 'Comparison', icon: GitCompare },
     { id: 'learn', label: 'Learn', icon: BookOpen },
     { id: 'templates', label: 'Templates', icon: Star },
     { id: 'history', label: 'History', icon: History },
@@ -949,6 +995,11 @@ function PromptQualityAnalyzer() {
                   >
                     <tab.icon className="w-5 h-5" />
                     {tab.label}
+                    {tab.id === 'comparison' && comparisonData.originalPrompt && (
+                      <span className="ml-auto bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                        New
+                      </span>
+                    )}
                     {tab.id === 'history' && promptHistory.length > 0 && (
                       <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
                         {promptHistory.length}
@@ -994,6 +1045,11 @@ function PromptQualityAnalyzer() {
                   >
                     <tab.icon className="w-5 h-5" />
                     {tab.label}
+                    {tab.id === 'comparison' && comparisonData.originalPrompt && (
+                      <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full ml-1">
+                        New
+                      </span>
+                    )}
                     {tab.id === 'history' && promptHistory.length > 0 && (
                       <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full ml-1">
                         {promptHistory.length}
@@ -1202,6 +1258,19 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'comparison' && (
+            <ComparisonTab
+              originalPrompt={comparisonData.originalPrompt}
+              optimizedPrompt={comparisonData.optimizedPrompt}
+              originalAnalysis={comparisonData.originalAnalysis}
+              optimizedAnalysis={comparisonData.optimizedAnalysis}
+              onAcceptOptimized={handleAcceptOptimized}
+              onRevertToOriginal={handleRevertToOriginal}
+              onCopySuccess={() => setCopySuccess(true)}
+              onLoadPrompt={handleLoadPrompt}
+            />
           )}
 
           {activeTab === 'learn' && (
