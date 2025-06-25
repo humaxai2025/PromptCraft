@@ -103,23 +103,12 @@ function PromptQualityAnalyzer() {
     setActiveTab('templates');
   };
 
-  // Real-time analysis effect
+  // Real-time analysis effect (no auto-save)
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
-    
-    // Auto-save to history for decent prompts (50+ score)
-    if (newAnalysis && prompt.trim() && prompt.trim().length > 10 && newAnalysis.overallScore >= 50) {
-      const timeoutId = setTimeout(() => {
-        const recentPrompts = history.slice(0, 3).map(item => item.prompt);
-        if (!recentPrompts.includes(prompt.trim())) {
-          addToHistory(prompt.trim(), newAnalysis);
-        }
-      }, 1000);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [prompt, history, addToHistory]);
+    // Manual save only - user controls when to save to history
+  }, [prompt]);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -184,8 +173,6 @@ function PromptQualityAnalyzer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
-
       <div className="relative z-10">
         {/* Header */}
         <Header

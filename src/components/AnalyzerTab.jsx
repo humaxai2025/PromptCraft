@@ -112,9 +112,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             {analysis && (
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-slate-400">
                 <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences</span>
-                {analysis.overallScore >= 50 && (
-                  <span className="text-green-400 text-xs">✓ Auto-saved to history</span>
-                )}
+                <span className="text-slate-400 text-xs">Use save button to add to history</span>
               </div>
             )}
           </div>
