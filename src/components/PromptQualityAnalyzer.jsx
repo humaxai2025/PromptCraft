@@ -10,8 +10,8 @@ import ComparisonTab from './ComparisonTab';
 import TemplatesTab from './TemplatesTab';
 import HistoryTab from './HistoryTab';
 import FavoritesTab from './FavoritesTab';
-import FeedbackModal from './FeebackModal';
-import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notification';
+import FeedbackModal from './FeedbackModal';
+import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notifications';
 
 // Hooks and Utils
 import { useLocalStorage, usePromptHistory, useFavorites, useCompletedLessons } from '../hooks/useLocalStorage';
