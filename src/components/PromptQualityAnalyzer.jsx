@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, Coffee } from 'lucide-react';
 
 // Components
-import Header from './Header';
+import Header from './header';
 import TabNavigation from './TabNavigation';
 import AnalyzerTab from './AnalyzerTab';
 import LearnTab from './LearnTab';
@@ -10,8 +10,8 @@ import ComparisonTab from './ComparisonTab';
 import TemplatesTab from './TemplatesTab';
 import HistoryTab from './HistoryTab';
 import FavoritesTab from './FavoritesTab';
-import FeedbackModal from './FeedbackModal';
-import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notifications';
+import FeedbackModal from './FeebackModal';
+import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notification';
 
 // Hooks and Utils
 import { useLocalStorage, usePromptHistory, useFavorites, useCompletedLessons } from '../hooks/useLocalStorage';
