@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useFavorites } from '../hooks/useLocalStorage';
 
-const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
+const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate, onRefresh }) => {
   const { favorites, removeFromFavorites, clearFavorites } = useFavorites();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,6 +13,17 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [expandedItems, setExpandedItems] = useState(new Set());
+
+  // Enhanced functions that trigger refresh
+  const handleRemoveFromFavorites = (itemId) => {
+    removeFromFavorites(itemId);
+    if (onRefresh) onRefresh(); // Trigger refresh
+  };
+
+  const handleClearFavorites = () => {
+    clearFavorites();
+    if (onRefresh) onRefresh(); // Trigger refresh
+  };
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
@@ -173,7 +184,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => removeFromFavorites(item.id)}
+            onClick={() => handleRemoveFromFavorites(item.id)}
             className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
             title="Remove from favorites"
           >
@@ -296,7 +307,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
               </select>
               
               <button
-                onClick={clearFavorites}
+                onClick={handleClearFavorites}
                 disabled={favorites.length === 0}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
               >

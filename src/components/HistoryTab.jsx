@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { usePromptHistory, useFavorites } from '../hooks/useLocalStorage';
 
-const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
+const HistoryTab = ({ onLoadPrompt, onCopySuccess, onRefresh }) => {
   const { history, removeFromHistory, clearHistory } = usePromptHistory();
   const { toggleFavorite, isFavorited } = useFavorites();
   
@@ -14,6 +14,22 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [expandedItems, setExpandedItems] = useState(new Set());
+
+  // Enhanced functions that trigger refresh
+  const handleRemoveFromHistory = (itemId) => {
+    removeFromHistory(itemId);
+    if (onRefresh) onRefresh(); // Trigger refresh
+  };
+
+  const handleClearHistory = () => {
+    clearHistory();
+    if (onRefresh) onRefresh(); // Trigger refresh
+  };
+
+  const handleToggleFavorite = (item, type) => {
+    toggleFavorite(item, type);
+    if (onRefresh) onRefresh(); // Trigger refresh
+  };
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
@@ -122,7 +138,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            onClick={() => toggleFavorite({ prompt: item.prompt, analysis: item.analysis }, 'prompt')}
+            onClick={() => handleToggleFavorite({ prompt: item.prompt, analysis: item.analysis }, 'prompt')}
             className={'p-2 rounded-lg transition-colors ' + (
               isFavorited(item.prompt) 
                 ? 'bg-red-600 hover:bg-red-700 text-white' 
@@ -154,7 +170,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => removeFromHistory(item.id)}
+            onClick={() => handleRemoveFromHistory(item.id)}
             className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
             title="Delete"
           >
@@ -275,7 +291,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
               </select>
               
               <button
-                onClick={clearHistory}
+                onClick={handleClearHistory}
                 disabled={history.length === 0}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
               >

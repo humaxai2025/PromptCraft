@@ -24,6 +24,7 @@ function PromptQualityAnalyzer() {
   const [prompt, setPrompt] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(0); // Force refresh counter
   
   // Notifications
   const [copySuccess, setCopySuccess] = useState(false);
@@ -42,6 +43,21 @@ function PromptQualityAnalyzer() {
   const { favorites, addToFavorites, removeFromFavorites, isFavorited, toggleFavorite, clearFavorites } = useFavorites();
   const { completedLessons, markLessonComplete } = useCompletedLessons();
 
+  // Force refresh function
+  const triggerRefresh = () => {
+    setForceRefresh(prev => prev + 1);
+    // Emit custom event for cross-component communication
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('promptAnalyzer_refresh'));
+    }, 10);
+  };
+
+  // Enhanced toggle favorite with refresh
+  const handleToggleFavorite = (item, type) => {
+    toggleFavorite(item, type);
+    triggerRefresh(); // Force refresh after toggling
+  };
+
   // Copy to clipboard functionality
   const copyToClipboard = async (text = prompt) => {
     try {
@@ -53,12 +69,13 @@ function PromptQualityAnalyzer() {
     }
   };
 
-  // Manual save to history function
+  // Manual save to history function with refresh
   const saveToHistory = () => {
     if (prompt.trim() && analysis) {
       addToHistory(prompt.trim(), analysis);
       setSavedToHistory(true);
       setTimeout(() => setSavedToHistory(false), 2000);
+      triggerRefresh(); // Force refresh after saving
     }
   };
 
@@ -121,10 +138,31 @@ function PromptQualityAnalyzer() {
     // Force a refresh of components when returning from favorites tab
     if (activeTab === 'analyzer') {
       // Force re-evaluation of favorite status
-      const currentFavCount = favorites.length;
-      // This triggers the key change in AnalyzerTab
+      triggerRefresh();
     }
-  }, [activeTab, favorites.length]); // React to favorites count changes
+  }, [activeTab, favorites.length, history.length]); // React to data changes
+
+  // Listen for localStorage changes (for cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'promptAnalyzer_favorites' || e.key === 'promptAnalyzer_history') {
+        triggerRefresh(); // Force refresh when localStorage changes
+      }
+    };
+
+    // Also listen for custom events (for same-tab changes)
+    const handleCustomRefresh = () => {
+      triggerRefresh();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('promptAnalyzer_refresh', handleCustomRefresh);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('promptAnalyzer_refresh', handleCustomRefresh);
+    };
+  }, []);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -132,13 +170,13 @@ function PromptQualityAnalyzer() {
       case 'analyzer':
         return (
           <AnalyzerTab
-            key={`analyzer-${favorites.length}-${activeTab}`} // Simple but effective re-render trigger
+            key={`analyzer-${forceRefresh}-${favorites.length}-${activeTab}`} // Use refresh counter
             prompt={prompt}
             setPrompt={setPrompt}
             analysis={analysis}
             onOptimize={handleOptimize}
             onCopyToClipboard={copyToClipboard}
-            onToggleFavorite={toggleFavorite}
+            onToggleFavorite={handleToggleFavorite}
             isFavorited={isFavorited}
             onSaveToHistory={saveToHistory}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
@@ -148,10 +186,11 @@ function PromptQualityAnalyzer() {
       case 'templates':
         return (
           <TemplatesTab
+            key={`templates-${forceRefresh}`}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             onApplyTemplate={applyTemplate}
-            onToggleFavorite={toggleFavorite}
+            onToggleFavorite={handleToggleFavorite}
             isFavorited={isFavorited}
           />
         );
@@ -159,23 +198,28 @@ function PromptQualityAnalyzer() {
       case 'history':
         return (
           <HistoryTab
+            key={`history-${forceRefresh}-${history.length}`}
             onLoadPrompt={handleLoadPrompt}
             onCopySuccess={() => setCopySuccess(true)}
+            onRefresh={triggerRefresh}
           />
         );
       
       case 'favorites':
         return (
           <FavoritesTab
+            key={`favorites-${forceRefresh}-${favorites.length}`}
             onLoadPrompt={handleLoadPrompt}
             onCopySuccess={() => setCopySuccess(true)}
             onLoadTemplate={applyTemplate}
+            onRefresh={triggerRefresh}
           />
         );
       
       case 'learn':
         return (
           <LearnTab
+            key={`learn-${forceRefresh}`}
             completedLessons={completedLessons}
             onLessonComplete={markLessonComplete}
             onTryExample={tryExample}
@@ -198,13 +242,14 @@ function PromptQualityAnalyzer() {
           setMobileMenuOpen={setMobileMenuOpen}
         >
           {/* Mobile Menu Content */}
-          <div className="container mx-auto px-4 py-4 space-y-3">
+          <div className="container mx-auto px-4 py-4 space-y-3" key={`mobile-nav-${forceRefresh}`}>
             {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
               <button
                 key={tabId}
                 onClick={() => {
                   setActiveTab(tabId);
                   setMobileMenuOpen(false);
+                  triggerRefresh(); // Refresh when switching tabs
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === tabId 
@@ -246,14 +291,17 @@ function PromptQualityAnalyzer() {
         </Header>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:block bg-black/10 backdrop-blur-sm border-b border-white/10">
+        <div className="hidden md:block bg-black/10 backdrop-blur-sm border-b border-white/10" key={`desktop-nav-${forceRefresh}`}>
           <div className="container mx-auto px-4">
             <div className="flex justify-center">
               <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
                 {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
                   <button
                     key={tabId}
-                    onClick={() => setActiveTab(tabId)}
+                    onClick={() => {
+                      setActiveTab(tabId);
+                      triggerRefresh(); // Refresh when switching tabs
+                    }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium ${
                       activeTab === tabId 
                         ? 'bg-purple-600 text-white shadow-lg' 
