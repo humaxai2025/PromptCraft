@@ -1,113 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Heart, Star, Search, Trash2, Calendar, Clock, Filter, Archive, ChevronDown, ChevronUp,
-  RotateCcw, Copy, Download, Tag, Bookmark, FileText, Zap, Target, MessageSquare,
-  CheckCircle, XCircle, AlertTriangle, Brain, PenTool, Code, BarChart3, Lightbulb
+  Heart, Star, Search, Trash2, Calendar, Clock, Archive, ChevronDown, ChevronUp,
+  RotateCcw, Copy, MessageSquare, FileText, Tag, CheckCircle, XCircle, AlertTriangle, Brain
 } from 'lucide-react';
+import { useFavorites } from '../hooks/useLocalStorage';
 
 const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('promptAnalyzer_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const { favorites, removeFromFavorites, clearFavorites } = useFavorites();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // all, prompts, templates
+  const [filterType, setFilterType] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('newest'); // newest, oldest, name, score
+  const [sortBy, setSortBy] = useState('newest');
   const [expandedItems, setExpandedItems] = useState(new Set());
 
-  // Save favorite to localStorage
-  const saveFavorites = (updatedFavorites) => {
-    setFavorites(updatedFavorites);
-    localStorage.setItem('promptAnalyzer_favorites', JSON.stringify(updatedFavorites));
-  };
-
-  // Add to favorites (called from parent)
-  const addToFavorites = (item, type = 'prompt') => {
-    const favoriteItem = {
-      id: Date.now() + Math.random(),
-      type: type, // 'prompt' or 'template'
-      title: type === 'prompt' 
-        ? (item.prompt ? item.prompt.slice(0, 50) + '...' : 'Untitled Prompt')
-        : item.name,
-      content: type === 'prompt' ? item.prompt : item.template,
-      analysis: type === 'prompt' ? item.analysis : null,
-      category: type === 'template' ? item.category : 'Custom',
-      description: type === 'template' ? item.description : '',
-      icon: type === 'template' ? item.icon : null,
-      timestamp: new Date().toISOString(),
-      tags: []
-    };
-
-    const updatedFavorites = [favoriteItem, ...favorites];
-    saveFavorites(updatedFavorites);
-    return favoriteItem.id;
-  };
-
-  // Remove from favorites
-  const removeFromFavorites = (itemId) => {
-    const updatedFavorites = favorites.filter(item => item.id !== itemId);
-    saveFavorites(updatedFavorites);
-  };
-
-  // Check if item is favorited
-  const isFavorited = (content) => {
-    return favorites.some(fav => fav.content === content);
-  };
-
-  // Toggle favorite status
-  const toggleFavorite = (item, type = 'prompt') => {
-    const content = type === 'prompt' ? item.prompt : item.template;
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (isFavorited(content)) {
-      const existingFav = favorites.find(fav => fav.content === content);
-      if (existingFav) {
-        removeFromFavorites(existingFav.id);
-        return false; // removed
-      }
-    } else {
-      addToFavorites(item, type);
-      return true; // added
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getScoreIcon = (score) => {
+    if (score >= 80) return <CheckCircle className="w-4 h-4 text-emerald-400" />;
+    if (score >= 60) return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+    return <XCircle className="w-4 h-4 text-red-400" />;
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      onCopySuccess();
+    } catch (err) {
+      console.error('Failed to copy: ', err);
     }
   };
 
-  // Expose functions to parent component
-  useEffect(() => {
-    window.addToFavorites = addToFavorites;
-    window.removeFromFavorites = removeFromFavorites;
-    window.isFavorited = isFavorited;
-    window.toggleFavorite = toggleFavorite;
-    
-    return () => {
-      delete window.addToFavorites;
-      delete window.removeFromFavorites;
-      delete window.isFavorited;
-      delete window.toggleFavorite;
-    };
-  }, [favorites]);
-
-  // Clear all favorites
-  const clearAllFavorites = () => {
-    setFavorites([]);
-    localStorage.removeItem('promptAnalyzer_favorites');
-  };
-
-  // Get unique categories
   const getCategories = () => {
     const categories = favorites.map(item => item.category).filter(Boolean);
     return [...new Set(categories)];
   };
 
-  // Filter and sort favorites
   const getFilteredFavorites = () => {
     let filtered = favorites;
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(item => 
         item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -116,17 +57,14 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
       );
     }
 
-    // Type filter
     if (filterType !== 'all') {
       filtered = filtered.filter(item => item.type === filterType);
     }
 
-    // Category filter
     if (filterCategory !== 'all') {
       filtered = filtered.filter(item => item.category === filterCategory);
     }
 
-    // Sort
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'oldest':
@@ -147,7 +85,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
     return filtered;
   };
 
-  const toggleExpandItem = (itemId) => {
+  const toggleItem = (itemId) => {
     const newExpanded = new Set(expandedItems);
     if (newExpanded.has(itemId)) {
       newExpanded.delete(itemId);
@@ -155,27 +93,6 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
       newExpanded.add(itemId);
     }
     setExpandedItems(newExpanded);
-  };
-
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return 'Today';
-    if (diffDays === 2) return 'Yesterday';
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString();
-  };
-
-  const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      onCopySuccess();
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-    }
   };
 
   const loadFromFavorites = (item) => {
@@ -192,39 +109,6 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
     }
   };
 
-  const exportFavorites = () => {
-    const dataStr = JSON.stringify(favorites, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'prompt-analyzer-favorites.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const getScoreIcon = (score) => {
-    if (score >= 80) return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-    if (score >= 60) return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
-    return <XCircle className="w-4 h-4 text-red-400" />;
-  };
-
-  const getTypeIcon = (type) => {
-    return type === 'prompt' ? <MessageSquare className="w-4 h-4" /> : <FileText className="w-4 h-4" />;
-  };
-
-  const getCategoryIcon = (category) => {
-    const iconMap = {
-      'Content Writing': PenTool,
-      'Business Strategy': Lightbulb,
-      'Technology': Code,
-      'Data Analytics': BarChart3,
-      'Custom': MessageSquare
-    };
-    const IconComponent = iconMap[category] || MessageSquare;
-    return <IconComponent className="w-4 h-4" />;
-  };
-
   const FavoriteItem = ({ item, isExpanded, onToggle }) => (
     <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
@@ -233,9 +117,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
             {item.type === 'template' && item.icon ? (
               React.createElement(item.icon, { className: "w-5 h-5 text-purple-400" })
             ) : (
-              <div className="text-purple-400">
-                {getTypeIcon(item.type)}
-              </div>
+              <MessageSquare className="w-5 h-5 text-purple-400" />
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -256,7 +138,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
                 {formatTimestamp(item.timestamp)}
               </span>
               <span className="flex items-center gap-1">
-                {getCategoryIcon(item.category)}
+                <Tag className="w-3 h-3" />
                 {item.category}
               </span>
               {item.analysis && (
@@ -308,8 +190,8 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
         <div className="space-y-4 border-t border-white/10 pt-4">
           <div className="bg-slate-800/50 rounded-xl p-4">
             <h5 className="text-white font-medium mb-2 flex items-center gap-2">
-              {getTypeIcon(item.type)}
-              <span className="text-purple-400">{item.type === 'prompt' ? 'Prompt Content' : 'Template Content'}</span>
+              {item.type === 'prompt' ? <MessageSquare className="w-4 h-4 text-purple-400" /> : <FileText className="w-4 h-4 text-purple-400" />}
+              {item.type === 'prompt' ? 'Prompt Content' : 'Template Content'}
             </h5>
             <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
               {item.content}
@@ -368,7 +250,6 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
       
       {favorites.length > 0 ? (
         <>
-          {/* Search and Filter Controls */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
@@ -388,8 +269,8 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
                 className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
               >
                 <option value="all">All Types</option>
-                <option value="prompts">Prompts Only</option>
-                <option value="templates">Templates Only</option>
+                <option value="prompt">Prompts Only</option>
+                <option value="template">Templates Only</option>
               </select>
 
               <select
@@ -414,26 +295,14 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
                 <option value="score">Highest Score</option>
               </select>
               
-              <div className="flex gap-2">
-                <button
-                  onClick={exportFavorites}
-                  disabled={favorites.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50 flex-1"
-                  title="Export favorites"
-                >
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-                <button
-                  onClick={clearAllFavorites}
-                  disabled={favorites.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50 flex-1"
-                  title="Clear all favorites"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Clear
-                </button>
-              </div>
+              <button
+                onClick={clearFavorites}
+                disabled={favorites.length === 0}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All
+              </button>
             </div>
             
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-400">
@@ -456,7 +325,6 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
             </div>
           </div>
 
-          {/* Favorites List */}
           <div className="space-y-4">
             {getFilteredFavorites().length > 0 ? (
               getFilteredFavorites().map(item => (
@@ -464,7 +332,7 @@ const FavoritesTab = ({ onLoadPrompt, onCopySuccess, onLoadTemplate }) => {
                   key={item.id}
                   item={item}
                   isExpanded={expandedItems.has(item.id)}
-                  onToggle={toggleExpandItem}
+                  onToggle={toggleItem}
                 />
               ))
             ) : (

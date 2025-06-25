@@ -1,71 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain,
-  History, Search, Trash2, Calendar, Clock, Filter, Archive, ChevronDown, ChevronUp,
-  RotateCcw, SortDesc, SortAsc, Eye, EyeOff, Copy
+  History, Search, Trash2, Calendar, Clock, Archive, ChevronDown, ChevronUp,
+  RotateCcw, Copy, Heart
 } from 'lucide-react';
+import { usePromptHistory, useFavorites } from '../hooks/useLocalStorage';
 
 const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
-  const [promptHistory, setPromptHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('promptAnalyzer_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const { history, removeFromHistory, clearHistory } = usePromptHistory();
+  const { toggleFavorite, isFavorited } = useFavorites();
   
-  const [historySearchTerm, setHistorySearchTerm] = useState('');
-  const [historyFilter, setHistoryFilter] = useState('all'); // all, high, medium, low
-  const [historySortBy, setHistorySortBy] = useState('newest'); // newest, oldest, score-high, score-low
-  const [expandedHistoryItems, setExpandedHistoryItems] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [expandedItems, setExpandedItems] = useState(new Set());
 
-  // Save prompt to history (called from parent)
-  const saveToHistory = (promptText, analysisData) => {
-    if (!promptText.trim() || !analysisData) return;
-
-    const historyItem = {
-      id: Date.now() + Math.random(),
-      prompt: promptText,
-      analysis: analysisData,
-      timestamp: new Date().toISOString(),
-      preview: promptText.slice(0, 100) + (promptText.length > 100 ? '...' : '')
-    };
-
-    const updatedHistory = [historyItem, ...promptHistory].slice(0, 100); // Keep last 100 items
-    setPromptHistory(updatedHistory);
-    localStorage.setItem('promptAnalyzer_history', JSON.stringify(updatedHistory));
-  };
-
-  // Expose saveToHistory function to parent component
-  useEffect(() => {
-    // Store the function in a way that parent can access it
-    window.saveToPromptHistory = saveToHistory;
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    return () => {
-      delete window.saveToPromptHistory;
-    };
-  }, [promptHistory]);
-
-  // Load prompt from history
-  const loadFromHistory = (historyItem) => {
-    onLoadPrompt(historyItem.prompt);
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    return date.toLocaleDateString();
   };
 
-  // Delete from history
-  const deleteFromHistory = (itemId) => {
-    const updatedHistory = promptHistory.filter(item => item.id !== itemId);
-    setPromptHistory(updatedHistory);
-    localStorage.setItem('promptAnalyzer_history', JSON.stringify(updatedHistory));
+  const getScoreIcon = (score) => {
+    if (score >= 80) return <CheckCircle className="w-5 h-5 text-emerald-400" />;
+    if (score >= 60) return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+    return <XCircle className="w-5 h-5 text-red-400" />;
   };
 
-  // Clear all history
-  const clearAllHistory = () => {
-    setPromptHistory([]);
-    localStorage.removeItem('promptAnalyzer_history');
+  const getSuggestionIcon = (type) => {
+    if (type === 'error') return <XCircle className="w-4 h-4 text-red-400" />;
+    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+    return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
-  // Copy to clipboard
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -75,32 +48,28 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
     }
   };
 
-  // Filter and sort history
   const getFilteredHistory = () => {
-    let filtered = promptHistory;
+    let filtered = history;
 
-    // Search filter
-    if (historySearchTerm) {
+    if (searchTerm) {
       filtered = filtered.filter(item => 
-        item.prompt.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
-        item.preview.toLowerCase().includes(historySearchTerm.toLowerCase())
+        item.prompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.preview.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Score filter
-    if (historyFilter !== 'all') {
+    if (filter !== 'all') {
       filtered = filtered.filter(item => {
         const score = item.analysis.overallScore;
-        if (historyFilter === 'high') return score >= 80;
-        if (historyFilter === 'medium') return score >= 60 && score < 80;
-        if (historyFilter === 'low') return score < 60;
+        if (filter === 'high') return score >= 80;
+        if (filter === 'medium') return score >= 60 && score < 80;
+        if (filter === 'low') return score < 60;
         return true;
       });
     }
 
-    // Sort
     filtered = [...filtered].sort((a, b) => {
-      switch (historySortBy) {
+      switch (sortBy) {
         case 'oldest':
           return new Date(a.timestamp) - new Date(b.timestamp);
         case 'score-high':
@@ -116,44 +85,14 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
     return filtered;
   };
 
-  const toggleHistoryItem = (itemId) => {
-    const newExpanded = new Set(expandedHistoryItems);
+  const toggleItem = (itemId) => {
+    const newExpanded = new Set(expandedItems);
     if (newExpanded.has(itemId)) {
       newExpanded.delete(itemId);
     } else {
       newExpanded.add(itemId);
     }
-    setExpandedHistoryItems(newExpanded);
-  };
-
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return 'Today';
-    if (diffDays === 2) return 'Yesterday';
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'from-emerald-500 to-green-400';
-    if (score >= 60) return 'from-yellow-500 to-orange-400';
-    return 'from-red-500 to-pink-400';
-  };
-
-  const getScoreIcon = (score) => {
-    if (score >= 80) return <CheckCircle className="w-5 h-5 text-emerald-400" />;
-    if (score >= 60) return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
-    return <XCircle className="w-5 h-5 text-red-400" />;
-  };
-
-  const getSuggestionIcon = (type) => {
-    if (type === 'error') return <XCircle className="w-4 h-4 text-red-400" />;
-    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
-    return <Lightbulb className="w-4 h-4 text-blue-400" />;
+    setExpandedItems(newExpanded);
   };
 
   const HistoryItem = ({ item, isExpanded, onToggle }) => (
@@ -183,6 +122,17 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
+            onClick={() => toggleFavorite({ prompt: item.prompt, analysis: item.analysis }, 'prompt')}
+            className={'p-2 rounded-lg transition-colors ' + (
+              isFavorited(item.prompt) 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-slate-600 hover:bg-slate-700 text-white'
+            )}
+            title={isFavorited(item.prompt) ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={'w-4 h-4 ' + (isFavorited(item.prompt) ? 'fill-current' : '')} />
+          </button>
+          <button
             onClick={() => copyToClipboard(item.prompt)}
             className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
             title="Copy prompt"
@@ -190,7 +140,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
             <Copy className="w-4 h-4" />
           </button>
           <button
-            onClick={() => loadFromHistory(item)}
+            onClick={() => onLoadPrompt(item.prompt)}
             className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             title="Load prompt"
           >
@@ -204,7 +154,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => deleteFromHistory(item.id)}
+            onClick={() => removeFromHistory(item.id)}
             className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
             title="Delete"
           >
@@ -257,7 +207,7 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
             </div>
           </div>
 
-          {item.analysis.suggestions.length > 0 && (
+          {item.analysis.suggestions && item.analysis.suggestions.length > 0 && (
             <div className="bg-slate-800/50 rounded-xl p-4">
               <h5 className="text-white font-medium mb-3">Suggestions</h5>
               <div className="space-y-2">
@@ -287,9 +237,8 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
         </p>
       </div>
       
-      {promptHistory.length > 0 ? (
+      {history.length > 0 ? (
         <>
-          {/* Search and Filter Controls */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative">
@@ -297,26 +246,26 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
                 <input
                   type="text"
                   placeholder="Search prompts..."
-                  value={historySearchTerm}
-                  onChange={(e) => setHistorySearchTerm(e.target.value)}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
               </div>
               
               <select
-                value={historyFilter}
-                onChange={(e) => setHistoryFilter(e.target.value)}
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
                 className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
               >
                 <option value="all">All Scores</option>
                 <option value="high">High (80+)</option>
                 <option value="medium">Medium (60-79)</option>
-                <option value="low">Low (<60)</option>
+                <option value="low">Low (&lt;60)</option>
               </select>
               
               <select
-                value={historySortBy}
-                onChange={(e) => setHistorySortBy(e.target.value)}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
               >
                 <option value="newest">Newest First</option>
@@ -326,8 +275,8 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
               </select>
               
               <button
-                onClick={clearAllHistory}
-                disabled={promptHistory.length === 0}
+                onClick={clearHistory}
+                disabled={history.length === 0}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
@@ -338,24 +287,23 @@ const HistoryTab = ({ onLoadPrompt, onCopySuccess }) => {
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-400">
               <span className="flex items-center gap-1">
                 <Archive className="w-4 h-4" />
-                {getFilteredHistory().length} of {promptHistory.length} prompts
+                {getFilteredHistory().length} of {history.length} prompts
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                Last updated: {promptHistory.length > 0 ? formatTimestamp(promptHistory[0].timestamp) : 'Never'}
+                Last updated: {history.length > 0 ? formatTimestamp(history[0].timestamp) : 'Never'}
               </span>
             </div>
           </div>
 
-          {/* History List */}
           <div className="space-y-4">
             {getFilteredHistory().length > 0 ? (
               getFilteredHistory().map(item => (
                 <HistoryItem
                   key={item.id}
                   item={item}
-                  isExpanded={expandedHistoryItems.has(item.id)}
-                  onToggle={toggleHistoryItem}
+                  isExpanded={expandedItems.has(item.id)}
+                  onToggle={toggleItem}
                 />
               ))
             ) : (
