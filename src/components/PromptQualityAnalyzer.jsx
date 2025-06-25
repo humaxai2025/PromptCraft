@@ -163,13 +163,23 @@ function PromptQualityAnalyzer() {
     };
   }, []);
 
+  // Handle tab switching
+  const handleTabSwitch = (tabId) => {
+    setActiveTab(tabId);
+    setMobileMenuOpen(false);
+    // Small delay to ensure state updates properly
+    setTimeout(() => {
+      triggerRefresh();
+    }, 50);
+  };
+
   // Render current tab content
   const renderTabContent = () => {
     switch (activeTab) {
       case 'analyzer':
         return (
           <AnalyzerTab
-            key={`analyzer-${forceRefresh}-${favorites.length}-${activeTab}`} // Use refresh counter
+            key={`analyzer-${forceRefresh}-${favorites.length}-${activeTab}`}
             prompt={prompt}
             setPrompt={setPrompt}
             analysis={analysis}
@@ -227,7 +237,17 @@ function PromptQualityAnalyzer() {
         );
       
       default:
-        return null;
+        return (
+          <div className="text-center text-white p-8">
+            <h2 className="text-xl mb-4">Unknown tab: {activeTab}</h2>
+            <button 
+              onClick={() => handleTabSwitch('analyzer')} 
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-all"
+            >
+              Go to Analyzer
+            </button>
+          </div>
+        );
     }
   };
 
@@ -245,11 +265,7 @@ function PromptQualityAnalyzer() {
             {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
               <button
                 key={tabId}
-                onClick={() => {
-                  setActiveTab(tabId);
-                  setMobileMenuOpen(false);
-                  triggerRefresh(); // Refresh when switching tabs
-                }}
+                onClick={() => handleTabSwitch(tabId)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === tabId 
                     ? 'bg-purple-600 text-white shadow-lg' 
@@ -297,10 +313,7 @@ function PromptQualityAnalyzer() {
                 {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
                   <button
                     key={tabId}
-                    onClick={() => {
-                      setActiveTab(tabId);
-                      triggerRefresh(); // Refresh when switching tabs
-                    }}
+                    onClick={() => handleTabSwitch(tabId)}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium ${
                       activeTab === tabId 
                         ? 'bg-purple-600 text-white shadow-lg' 
@@ -332,7 +345,9 @@ function PromptQualityAnalyzer() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 max-w-7xl">
-          {renderTabContent()}
+          <div key={`main-content-${activeTab}-${forceRefresh}`}>
+            {renderTabContent()}
+          </div>
         </main>
 
         {/* Support Section */}
