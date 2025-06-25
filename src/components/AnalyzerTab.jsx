@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
-  Zap, Copy, Heart, Wand2
+  Zap, Copy, Heart, Wand2, Save
 } from 'lucide-react';
 
 const AnalyzerTab = ({ 
@@ -12,6 +12,7 @@ const AnalyzerTab = ({
   onCopyToClipboard,
   onToggleFavorite,
   isFavorited,
+  onSaveToHistory,
   INDUSTRY_STANDARD = 85
 }) => {
   const getScoreColor = (score) => {
@@ -64,6 +65,15 @@ const AnalyzerTab = ({
                     <Heart className={'w-4 h-4 ' + (isFavorited(prompt.trim()) ? 'fill-current' : '')} />
                   </button>
                 )}
+                {prompt.trim() && analysis && (
+                  <button
+                    onClick={onSaveToHistory}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    title="Save to history"
+                  >
+                    <Save className="w-4 h-4" />
+                  </button>
+                )}
                 {analysis && analysis.overallScore >= INDUSTRY_STANDARD ? (
                   <div className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium">
                     <CheckCircle className="w-4 h-4" />
@@ -102,7 +112,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             {analysis && (
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-slate-400">
                 <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences</span>
-                {analysis.overallScore >= INDUSTRY_STANDARD && (
+                {analysis.overallScore >= 70 && (
                   <span className="text-green-400 text-xs">✓ Auto-saved to history</span>
                 )}
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen } from 'lucide-react';
+import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save } from 'lucide-react';
 
 // Components
 import Header from './header';
@@ -28,6 +28,7 @@ function PromptQualityAnalyzer() {
   // Notifications
   const [copySuccess, setCopySuccess] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [savedToHistory, setSavedToHistory] = useState(false);
   
   // Feedback Modal
   const [showFeedback, setShowFeedback] = useState(false);
@@ -100,6 +101,11 @@ function PromptQualityAnalyzer() {
       if (!recentPrompts.includes(prompt.trim())) {
         addToHistory(prompt.trim(), analysis);
         console.log('✅ Prompt manually saved to history!', analysis.overallScore);
+        // Show success feedback
+        setSavedToHistory(true);
+        setTimeout(() => setSavedToHistory(false), 2000);
+      } else {
+        console.log('⚠️ Prompt already exists in recent history');
       }
     }
   };
@@ -109,13 +115,13 @@ function PromptQualityAnalyzer() {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    // Only save to history when prompt reaches industry standard
-    if (newAnalysis && prompt.trim() && prompt.trim().length > 20 && newAnalysis.overallScore >= INDUSTRY_STANDARD) {
+    // Auto-save to history for good prompts (70+ score) - not too restrictive
+    if (newAnalysis && prompt.trim() && prompt.trim().length > 20 && newAnalysis.overallScore >= 70) {
       const timeoutId = setTimeout(() => {
         const recentPrompts = history.slice(0, 3).map(item => item.prompt);
         if (!recentPrompts.includes(prompt.trim())) {
           addToHistory(prompt.trim(), newAnalysis);
-          console.log('✅ Prompt saved to history - Industry standard reached!', newAnalysis.overallScore);
+          console.log('✅ Prompt auto-saved to history!', newAnalysis.overallScore);
         }
       }, 2000);
       
@@ -136,6 +142,7 @@ function PromptQualityAnalyzer() {
             onCopyToClipboard={copyToClipboard}
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
+            onSaveToHistory={saveToHistory}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
@@ -345,6 +352,22 @@ function PromptQualityAnalyzer() {
         isVisible={feedbackSubmitted}
         onClose={() => setFeedbackSubmitted(false)}
       />
+
+      {/* Saved to History Notification */}
+      {savedToHistory && (
+        <div 
+          className="fixed top-6 right-6 z-50 transform transition-all duration-300 ease-out"
+          onClick={() => setSavedToHistory(false)}
+        >
+          <div 
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl backdrop-blur-sm border border-blue-400/30 flex items-center gap-3 hover:scale-105 transition-transform cursor-pointer"
+          >
+            <Save className="w-5 h-5 text-blue-200" />
+            <span className="font-medium text-sm sm:text-base">💾 Saved to history!</span>
+            <div className="w-2 h-2 bg-blue-300 rounded-full animate-ping" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
