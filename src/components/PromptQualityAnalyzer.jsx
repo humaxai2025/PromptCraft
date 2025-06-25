@@ -10,8 +10,8 @@ import ComparisonTab from './ComparisonTab';
 import TemplatesTab from './TemplatesTab';
 import HistoryTab from './HistoryTab';
 import FavoritesTab from './FavoritesTab';
-import FeedbackModal from './FeedbackModal';
-import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notifications';
+import FeedbackModal from './FeebackModal';
+import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notification';
 
 // Hooks and Utils
 import { useLocalStorage, usePromptHistory, useFavorites, useCompletedLessons } from '../hooks/useLocalStorage';
@@ -45,6 +45,9 @@ function PromptQualityAnalyzer() {
     optimizedAnalysis: null
   });
 
+  // Store the original user prompt for comparison
+  const [originalUserPrompt, setOriginalUserPrompt] = useState('');
+
   // Custom hooks
   const { history, addToHistory, removeFromHistory, clearHistory } = usePromptHistory();
   const { favorites, addToFavorites, removeFromFavorites, isFavorited, toggleFavorite, clearFavorites } = useFavorites();
@@ -72,12 +75,30 @@ function PromptQualityAnalyzer() {
   const handleOptimize = () => {
     if (!prompt.trim()) return;
     
+    // Store the original user prompt if not already stored
+    if (!originalUserPrompt) {
+      setOriginalUserPrompt(prompt.trim());
+    }
+    
     const optimizationResult = optimizePrompt(prompt, INDUSTRY_STANDARD);
     
     if (optimizationResult) {
-      setComparisonData(optimizationResult);
+      // Use the original user prompt for comparison, not the current prompt
+      const comparisonResult = {
+        ...optimizationResult,
+        originalPrompt: originalUserPrompt || prompt.trim(),
+        originalAnalysis: analyzePrompt(originalUserPrompt || prompt.trim())
+      };
+      
+      setComparisonData(comparisonResult);
       setPrompt(optimizationResult.optimizedPrompt);
-      setActiveTab('comparison');
+      
+      // Check if optimized prompt meets industry standard
+      const optimizedAnalysis = analyzePrompt(optimizationResult.optimizedPrompt);
+      if (optimizedAnalysis.overallScore >= INDUSTRY_STANDARD) {
+        // Don't automatically navigate - let user choose when to view comparison
+        console.log('Optimization complete! You can now view the comparison.');
+      }
     }
   };
 
@@ -95,6 +116,15 @@ function PromptQualityAnalyzer() {
   const handleLoadPrompt = (promptText) => {
     setPrompt(promptText);
     setActiveTab('analyzer');
+    // Reset original user prompt when loading a new prompt
+    setOriginalUserPrompt('');
+    // Clear comparison data when loading a new prompt
+    setComparisonData({
+      originalPrompt: null,
+      optimizedPrompt: null,
+      originalAnalysis: null,
+      optimizedAnalysis: null
+    });
   };
 
   // Feedback submission
@@ -115,10 +145,26 @@ function PromptQualityAnalyzer() {
     setActiveTab('templates');
   };
 
+  const navigateToComparison = () => {
+    setActiveTab('comparison');
+  };
+
   // Real-time analysis effect
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
+    
+    // If user significantly changes the prompt, reset the original tracking
+    if (originalUserPrompt && prompt.trim() && 
+        Math.abs(prompt.trim().length - originalUserPrompt.length) > 50) {
+      setOriginalUserPrompt('');
+      setComparisonData({
+        originalPrompt: null,
+        optimizedPrompt: null,
+        originalAnalysis: null,
+        optimizedAnalysis: null
+      });
+    }
     
     if (newAnalysis && prompt.trim() && prompt.trim().length > 20) {
       const timeoutId = setTimeout(() => {
@@ -130,7 +176,7 @@ function PromptQualityAnalyzer() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [prompt, history, addToHistory]);
+  }, [prompt, history, addToHistory, originalUserPrompt]);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -145,6 +191,8 @@ function PromptQualityAnalyzer() {
             onCopyToClipboard={copyToClipboard}
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
+            comparisonData={comparisonData}
+            onNavigateToComparison={navigateToComparison}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
@@ -225,19 +273,23 @@ function PromptQualityAnalyzer() {
             favoritesCount={favorites.length}
             onShowFeedback={() => setShowFeedback(true)}
             setMobileMenuOpen={setMobileMenuOpen}
+            isMobile={true}
           />
         </Header>
 
         {/* Desktop Navigation */}
-        <TabNavigation
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          comparisonData={comparisonData}
-          historyCount={history.length}
-          favoritesCount={favorites.length}
-          onShowFeedback={() => setShowFeedback(true)}
-          setMobileMenuOpen={setMobileMenuOpen}
-        />
+        <div className="hidden md:block">
+          <TabNavigation
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            comparisonData={comparisonData}
+            historyCount={history.length}
+            favoritesCount={favorites.length}
+            onShowFeedback={() => setShowFeedback(true)}
+            setMobileMenuOpen={setMobileMenuOpen}
+            isMobile={false}
+          />
+        </div>
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 max-w-7xl">

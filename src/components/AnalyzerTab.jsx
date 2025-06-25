@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
-  Zap, Copy, Heart, Wand2
+  Zap, Copy, Heart, Wand2, GitCompare, ArrowRight
 } from 'lucide-react';
 
 const AnalyzerTab = ({ 
@@ -12,6 +12,8 @@ const AnalyzerTab = ({
   onCopyToClipboard,
   onToggleFavorite,
   isFavorited,
+  comparisonData,
+  onNavigateToComparison,
   INDUSTRY_STANDARD = 85
 }) => {
   const getScoreColor = (score) => {
@@ -32,6 +34,8 @@ const AnalyzerTab = ({
     return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
+  const showComparisonNotification = comparisonData && comparisonData.originalPrompt && analysis && analysis.overallScore >= INDUSTRY_STANDARD;
+
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -40,6 +44,29 @@ const AnalyzerTab = ({
           Get real-time feedback on clarity, specificity, and effectiveness.
         </p>
       </div>
+
+      {/* Comparison Available Notification */}
+      {showComparisonNotification && (
+        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-green-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-green-400" />
+              <div>
+                <h3 className="text-green-400 font-semibold text-lg">🎉 Optimization Complete!</h3>
+                <p className="text-green-200 text-sm">Your prompt now meets industry standards. View the before & after comparison.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigateToComparison()}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-all font-medium"
+            >
+              <GitCompare className="w-4 h-4" />
+              View Comparison
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Input Section */}
