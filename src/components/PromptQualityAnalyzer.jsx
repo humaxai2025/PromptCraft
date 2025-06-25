@@ -84,21 +84,19 @@ function PromptQualityAnalyzer() {
     
     if (optimizationResult) {
       // Use the original user prompt for comparison, not the current prompt
+      const originalPromptToUse = originalUserPrompt || prompt.trim();
       const comparisonResult = {
-        ...optimizationResult,
-        originalPrompt: originalUserPrompt || prompt.trim(),
-        originalAnalysis: analyzePrompt(originalUserPrompt || prompt.trim())
+        originalPrompt: originalPromptToUse,
+        optimizedPrompt: optimizationResult.optimizedPrompt,
+        originalAnalysis: analyzePrompt(originalPromptToUse),
+        optimizedAnalysis: analyzePrompt(optimizationResult.optimizedPrompt)
       };
       
       setComparisonData(comparisonResult);
       setPrompt(optimizationResult.optimizedPrompt);
       
-      // Check if optimized prompt meets industry standard
-      const optimizedAnalysis = analyzePrompt(optimizationResult.optimizedPrompt);
-      if (optimizedAnalysis.overallScore >= INDUSTRY_STANDARD) {
-        // Don't automatically navigate - let user choose when to view comparison
-        console.log('Optimization complete! You can now view the comparison.');
-      }
+      console.log('Optimization complete! Comparison data set:', comparisonResult);
+      console.log('Comparison tab should now be available.');
     }
   };
 
@@ -149,14 +147,23 @@ function PromptQualityAnalyzer() {
     setActiveTab('comparison');
   };
 
+  // Debug comparison data changes
+  useEffect(() => {
+    console.log('Comparison data updated:', comparisonData);
+    console.log('Has original:', !!comparisonData.originalPrompt);
+    console.log('Has optimized:', !!comparisonData.optimizedPrompt);
+  }, [comparisonData]);
+
   // Real-time analysis effect
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    // If user significantly changes the prompt, reset the original tracking
+    // Only reset comparison data if user makes very significant changes or clears the prompt
     if (originalUserPrompt && prompt.trim() && 
-        Math.abs(prompt.trim().length - originalUserPrompt.length) > 50) {
+        (prompt.trim().length < originalUserPrompt.length * 0.5 || 
+         Math.abs(prompt.trim().length - originalUserPrompt.length) > 200)) {
+      console.log('Significant prompt change detected, clearing comparison data');
       setOriginalUserPrompt('');
       setComparisonData({
         originalPrompt: null,

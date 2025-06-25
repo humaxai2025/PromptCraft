@@ -21,7 +21,7 @@ const TabNavigation = ({
   isMobile = false
 }) => {
   const TabButton = ({ tab }) => {
-    const isDisabled = tab.id === 'comparison' && !comparisonData.originalPrompt;
+    const isDisabled = tab.id === 'comparison' && !(comparisonData && comparisonData.originalPrompt && comparisonData.optimizedPrompt);
     
     return (
       <button
@@ -43,9 +43,9 @@ const TabNavigation = ({
       >
         <tab.icon className="w-5 h-5" />
         {tab.label}
-        {tab.id === 'comparison' && comparisonData.originalPrompt && (
+        {tab.id === 'comparison' && comparisonData && comparisonData.originalPrompt && comparisonData.optimizedPrompt && (
           <span className={`text-white text-xs px-2 py-1 rounded-full ${isMobile ? 'ml-auto bg-orange-500' : 'bg-orange-500 ml-1'}`}>
-            New
+            Ready
           </span>
         )}
         {tab.id === 'history' && historyCount > 0 && (

@@ -34,7 +34,11 @@ const AnalyzerTab = ({
     return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
-  const showComparisonNotification = comparisonData && comparisonData.originalPrompt && analysis && analysis.overallScore >= INDUSTRY_STANDARD;
+  const showComparisonNotification = comparisonData && 
+    comparisonData.originalPrompt && 
+    comparisonData.optimizedPrompt && 
+    analysis && 
+    analysis.overallScore >= INDUSTRY_STANDARD;
 
   return (
     <div className="space-y-8">
