@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save, MessageSquare, RotateCcw, Trash2 } from 'lucide-react';
+import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save, MessageSquare, RotateCcw, Trash2, GitBranch } from 'lucide-react';
 
 // Components
 import Header from './header';
@@ -58,6 +58,8 @@ function PromptQualityAnalyzer() {
     setPrompt(template.template);
     setActiveTab('analyzer');
     setMobileMenuOpen(false);
+    // Reset versioning when applying template
+    setCurrentPromptId(null);
   };
 
   // Optimization handler - simplified to just optimize the current prompt
@@ -74,6 +76,8 @@ function PromptQualityAnalyzer() {
   const handleLoadPrompt = (promptText) => {
     setPrompt(promptText);
     setActiveTab('analyzer');
+    // Reset versioning when loading a new prompt
+    setCurrentPromptId(null);
   };
 
   // Feedback submission
@@ -88,6 +92,8 @@ function PromptQualityAnalyzer() {
   const tryExample = (exampleText) => {
     setPrompt(exampleText);
     setActiveTab('analyzer');
+    // Reset versioning when trying example
+    setCurrentPromptId(null);
   };
 
   const navigateToTemplates = () => {
@@ -162,6 +168,9 @@ function PromptQualityAnalyzer() {
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
             onSaveToHistory={saveToHistory}
+            onSaveAsNewVersion={saveAsNewVersion}
+            currentPromptId={currentPromptId}
+            promptVersions={promptVersions}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
@@ -178,109 +187,11 @@ function PromptQualityAnalyzer() {
         );
       
       case 'history':
-        // Debug HistoryTab inline - using the existing history from the hook
-        console.log('🔍 HistoryTab render - history count:', history.length);
-        console.log('📚 Full history data:', history);
-        
         return (
-          <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Prompt History</h2>
-              <p className="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto mb-6">
-                Review, reuse, and organize all your analyzed prompts with detailed insights.
-              </p>
-              
-              {/* Debug Info */}
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
-                <h3 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h3>
-                <p className="text-yellow-300 text-sm">
-                  Total history items: <strong>{history.length}</strong>
-                </p>
-                {history.length > 0 && (
-                  <p className="text-yellow-300 text-sm">
-                    Latest item score: <strong>{history[0]?.analysis?.overallScore}</strong>
-                  </p>
-                )}
-                <button
-                  onClick={() => {
-                    console.log('🧪 Manual test save to history');
-                    addToHistory('Test prompt for debugging', { 
-                      overallScore: 75, 
-                      scores: { clarity: 70, context: 75, structure: 80, specificity: 70, instructions: 75 },
-                      suggestions: [],
-                      stats: { words: 5, sentences: 1, characters: 25 } 
-                    });
-                  }}
-                  className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-                >
-                  Test Save to History
-                </button>
-                <button
-                  onClick={() => {
-                    console.log('🧹 Clearing all history');
-                    clearHistory();
-                  }}
-                  className="mt-2 ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
-                >
-                  Clear History
-                </button>
-              </div>
-            </div>
-            
-            {history.length > 0 ? (
-              <div className="space-y-4">
-                {history.map(item => (
-                  <div key={item.id} className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-2 bg-purple-600/20 rounded-lg flex-shrink-0">
-                          <MessageSquare className="w-5 h-5 text-purple-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-white text-sm sm:text-base font-medium">{item.preview || item.prompt.slice(0, 100)}</p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
-                            <span>Score: {item.analysis.overallScore}</span>
-                            <span>{item.analysis.stats.words} words</span>
-                            <span>{new Date(item.timestamp).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => handleLoadPrompt(item.prompt)}
-                          className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                          title="Load prompt"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeFromHistory(item.id)}
-                          className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-xl p-4">
-                      <h5 className="text-white font-medium mb-2">Full Prompt</h5>
-                      <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono bg-slate-900/50 rounded-lg p-3">
-                        {item.prompt}
-                      </pre>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-white/10 text-center">
-                <History className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
-                <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">No History Yet</h4>
-                <p className="text-slate-500 text-sm sm:text-base mb-6">
-                  Start analyzing prompts to build your history. Prompts are automatically saved when analyzed.
-                </p>
-              </div>
-            )}
-          </div>
+          <HistoryTab
+            onLoadPrompt={handleLoadPrompt}
+            onCopySuccess={() => setCopySuccess(true)}
+          />
         );
       
       case 'favorites':
