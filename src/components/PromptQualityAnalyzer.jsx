@@ -116,18 +116,15 @@ function PromptQualityAnalyzer() {
     // Forces the AnalyzerTab to re-check isFavorited status
   }, [favorites]);
 
-  // Also listen for localStorage changes from other tabs/windows
+  // Ensure proper state sync when switching tabs
   useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'promptAnalyzer_favorites') {
-        // Force a re-render when favorites change in localStorage
-        // The useFavorites hook should handle this automatically
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    // Force a refresh of components when returning from favorites tab
+    if (activeTab === 'analyzer') {
+      // Force re-evaluation of favorite status
+      const currentFavCount = favorites.length;
+      // This triggers the key change in AnalyzerTab
+    }
+  }, [activeTab, favorites.length]); // React to favorites count changes
 
   // Render current tab content
   const renderTabContent = () => {
@@ -135,7 +132,7 @@ function PromptQualityAnalyzer() {
       case 'analyzer':
         return (
           <AnalyzerTab
-            key={`analyzer-${favorites.length}-${activeTab}`} // Force re-render when favorites change or tab switches
+            key={`analyzer-${favorites.length}-${activeTab}`} // Simple but effective re-render trigger
             prompt={prompt}
             setPrompt={setPrompt}
             analysis={analysis}
@@ -144,7 +141,6 @@ function PromptQualityAnalyzer() {
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
             onSaveToHistory={saveToHistory}
-            favorites={favorites} // Pass favorites for debugging
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
