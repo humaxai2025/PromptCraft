@@ -37,16 +37,13 @@ function PromptQualityAnalyzer() {
   // Templates
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Comparison state
+  // Simplified comparison state
   const [comparisonData, setComparisonData] = useState({
     originalPrompt: null,
     optimizedPrompt: null,
     originalAnalysis: null,
     optimizedAnalysis: null
   });
-
-  // Store the original user prompt for comparison
-  const [originalUserPrompt, setOriginalUserPrompt] = useState('');
 
   // Custom hooks
   const { history, addToHistory, removeFromHistory, clearHistory } = usePromptHistory();
@@ -69,34 +66,34 @@ function PromptQualityAnalyzer() {
     setPrompt(template.template);
     setActiveTab('analyzer');
     setMobileMenuOpen(false);
+    // Clear comparison when applying template
+    setComparisonData({
+      originalPrompt: null,
+      optimizedPrompt: null,
+      originalAnalysis: null,
+      optimizedAnalysis: null
+    });
   };
 
-  // Optimization handler
+  // Simplified optimization handler
   const handleOptimize = () => {
     if (!prompt.trim()) return;
-    
-    // Store the original user prompt if not already stored
-    if (!originalUserPrompt) {
-      setOriginalUserPrompt(prompt.trim());
-    }
     
     const optimizationResult = optimizePrompt(prompt, INDUSTRY_STANDARD);
     
     if (optimizationResult) {
-      // Use the original user prompt for comparison, not the current prompt
-      const originalPromptToUse = originalUserPrompt || prompt.trim();
+      // Simple before/after comparison
       const comparisonResult = {
-        originalPrompt: originalPromptToUse,
+        originalPrompt: prompt.trim(),
         optimizedPrompt: optimizationResult.optimizedPrompt,
-        originalAnalysis: analyzePrompt(originalPromptToUse),
+        originalAnalysis: analyzePrompt(prompt.trim()),
         optimizedAnalysis: analyzePrompt(optimizationResult.optimizedPrompt)
       };
       
       setComparisonData(comparisonResult);
       setPrompt(optimizationResult.optimizedPrompt);
       
-      console.log('Optimization complete! Comparison data set:', comparisonResult);
-      console.log('Comparison tab should now be available.');
+      console.log('Optimization complete! Comparison available.');
     }
   };
 
@@ -114,9 +111,7 @@ function PromptQualityAnalyzer() {
   const handleLoadPrompt = (promptText) => {
     setPrompt(promptText);
     setActiveTab('analyzer');
-    // Reset original user prompt when loading a new prompt
-    setOriginalUserPrompt('');
-    // Clear comparison data when loading a new prompt
+    // Clear comparison when loading new prompt
     setComparisonData({
       originalPrompt: null,
       optimizedPrompt: null,
@@ -137,41 +132,23 @@ function PromptQualityAnalyzer() {
   const tryExample = (exampleText) => {
     setPrompt(exampleText);
     setActiveTab('analyzer');
+    // Clear comparison when trying example
+    setComparisonData({
+      originalPrompt: null,
+      optimizedPrompt: null,
+      originalAnalysis: null,
+      optimizedAnalysis: null
+    });
   };
 
   const navigateToTemplates = () => {
     setActiveTab('templates');
   };
 
-  const navigateToComparison = () => {
-    setActiveTab('comparison');
-  };
-
-  // Debug comparison data changes
-  useEffect(() => {
-    console.log('Comparison data updated:', comparisonData);
-    console.log('Has original:', !!comparisonData.originalPrompt);
-    console.log('Has optimized:', !!comparisonData.optimizedPrompt);
-  }, [comparisonData]);
-
   // Real-time analysis effect
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
-    
-    // Only reset comparison data if user makes very significant changes or clears the prompt
-    if (originalUserPrompt && prompt.trim() && 
-        (prompt.trim().length < originalUserPrompt.length * 0.5 || 
-         Math.abs(prompt.trim().length - originalUserPrompt.length) > 200)) {
-      console.log('Significant prompt change detected, clearing comparison data');
-      setOriginalUserPrompt('');
-      setComparisonData({
-        originalPrompt: null,
-        optimizedPrompt: null,
-        originalAnalysis: null,
-        optimizedAnalysis: null
-      });
-    }
     
     if (newAnalysis && prompt.trim() && prompt.trim().length > 20) {
       const timeoutId = setTimeout(() => {
@@ -183,7 +160,7 @@ function PromptQualityAnalyzer() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [prompt, history, addToHistory, originalUserPrompt]);
+  }, [prompt, history, addToHistory]);
 
   // Render current tab content
   const renderTabContent = () => {
@@ -198,8 +175,6 @@ function PromptQualityAnalyzer() {
             onCopyToClipboard={copyToClipboard}
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
-            comparisonData={comparisonData}
-            onNavigateToComparison={navigateToComparison}
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
