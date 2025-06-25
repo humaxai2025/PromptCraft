@@ -48,10 +48,10 @@ const TabNavigation = ({
     </button>
   );
 
-  return (
-    <>
-      {/* Mobile Menu Content - only shown when called from Header */}
-      <div className="container mx-auto px-4 py-4 space-y-3 md:hidden">
+  // Mobile version - only render when called from mobile context
+  if (setMobileMenuOpen) {
+    return (
+      <div className="container mx-auto px-4 py-4 space-y-3">
         {tabs.map(tab => (
           <TabButton key={`mobile-${tab.id}`} tab={tab} isMobile={true} />
         ))}
@@ -59,7 +59,7 @@ const TabNavigation = ({
           <button
             onClick={() => {
               onShowFeedback();
-              if (setMobileMenuOpen) setMobileMenuOpen(false);
+              setMobileMenuOpen(false);
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-white/10 rounded-lg transition-colors"
           >
@@ -68,20 +68,22 @@ const TabNavigation = ({
           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:block bg-black/10 backdrop-blur-sm border-b border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center">
-            <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
-              {tabs.map(tab => (
-                <TabButton key={`desktop-${tab.id}`} tab={tab} isMobile={false} />
-              ))}
-            </div>
+  // Desktop version
+  return (
+    <div className="bg-black/10 backdrop-blur-sm border-b border-white/10">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-center">
+          <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
+            {tabs.map(tab => (
+              <TabButton key={`desktop-${tab.id}`} tab={tab} isMobile={false} />
+            ))}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
