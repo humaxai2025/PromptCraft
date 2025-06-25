@@ -93,16 +93,29 @@ function PromptQualityAnalyzer() {
     setActiveTab('templates');
   };
 
+  // Manual save to history function
+  const saveToHistory = () => {
+    if (prompt.trim() && analysis) {
+      const recentPrompts = history.slice(0, 3).map(item => item.prompt);
+      if (!recentPrompts.includes(prompt.trim())) {
+        addToHistory(prompt.trim(), analysis);
+        console.log('✅ Prompt manually saved to history!', analysis.overallScore);
+      }
+    }
+  };
+
   // Real-time analysis effect
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
     
-    if (newAnalysis && prompt.trim() && prompt.trim().length > 20) {
+    // Only save to history when prompt reaches industry standard
+    if (newAnalysis && prompt.trim() && prompt.trim().length > 20 && newAnalysis.overallScore >= INDUSTRY_STANDARD) {
       const timeoutId = setTimeout(() => {
         const recentPrompts = history.slice(0, 3).map(item => item.prompt);
         if (!recentPrompts.includes(prompt.trim())) {
           addToHistory(prompt.trim(), newAnalysis);
+          console.log('✅ Prompt saved to history - Industry standard reached!', newAnalysis.overallScore);
         }
       }, 2000);
       
