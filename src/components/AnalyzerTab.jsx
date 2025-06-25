@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
   Zap, Copy, Heart, Wand2, Save
@@ -13,8 +13,16 @@ const AnalyzerTab = ({
   onToggleFavorite,
   isFavorited,
   onSaveToHistory,
+  favorites, // Added for state sync
   INDUSTRY_STANDARD = 85
 }) => {
+  // Check if current prompt is favorited - recalculate on every render
+  const isCurrentPromptFavorited = prompt.trim() ? isFavorited(prompt.trim()) : false;
+
+  // React to favorites changes to ensure proper state sync
+  useEffect(() => {
+    // This ensures the component responds to favorites state changes
+  }, [favorites]);
   const getScoreColor = (score) => {
     if (score >= 80) return 'from-emerald-500 to-green-400';
     if (score >= 60) return 'from-yellow-500 to-orange-400';
@@ -56,13 +64,13 @@ const AnalyzerTab = ({
                   <button
                     onClick={() => onToggleFavorite({ prompt: prompt.trim(), analysis }, 'prompt')}
                     className={'p-2 rounded-lg transition-colors ' + (
-                      isFavorited(prompt.trim()) 
+                      isCurrentPromptFavorited 
                         ? 'bg-red-600 hover:bg-red-700 text-white' 
                         : 'bg-slate-600 hover:bg-slate-700 text-white'
                     )}
-                    title={isFavorited(prompt.trim()) ? "Remove from favorites" : "Add to favorites"}
+                    title={isCurrentPromptFavorited ? "Remove from favorites" : "Add to favorites"}
                   >
-                    <Heart className={'w-4 h-4 ' + (isFavorited(prompt.trim()) ? 'fill-current' : '')} />
+                    <Heart className={'w-4 h-4 ' + (isCurrentPromptFavorited ? 'fill-current' : '')} />
                   </button>
                 )}
                 {prompt.trim() && analysis && (

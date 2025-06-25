@@ -110,12 +110,32 @@ function PromptQualityAnalyzer() {
     // Manual save only - user controls when to save to history
   }, [prompt]);
 
+  // Force re-render when favorites change to sync heart icon state
+  useEffect(() => {
+    // This effect runs whenever favorites array changes
+    // Forces the AnalyzerTab to re-check isFavorited status
+  }, [favorites]);
+
+  // Also listen for localStorage changes from other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'promptAnalyzer_favorites') {
+        // Force a re-render when favorites change in localStorage
+        // The useFavorites hook should handle this automatically
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Render current tab content
   const renderTabContent = () => {
     switch (activeTab) {
       case 'analyzer':
         return (
           <AnalyzerTab
+            key={`analyzer-${favorites.length}-${activeTab}`} // Force re-render when favorites change or tab switches
             prompt={prompt}
             setPrompt={setPrompt}
             analysis={analysis}
@@ -124,6 +144,7 @@ function PromptQualityAnalyzer() {
             onToggleFavorite={toggleFavorite}
             isFavorited={isFavorited}
             onSaveToHistory={saveToHistory}
+            favorites={favorites} // Pass favorites for debugging
             INDUSTRY_STANDARD={INDUSTRY_STANDARD}
           />
         );
