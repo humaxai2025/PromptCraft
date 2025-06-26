@@ -1,7 +1,7 @@
-import PromptQualityAnalyzer from './components/PromptQualityAnalyzer'
+import PromptCraft from './components/PromptQualityAnalyzer'
 
 function App() {
-  return <PromptQualityAnalyzer />
+  return <PromptCraft />
 }
 
 export default App
