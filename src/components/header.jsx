@@ -1,11 +1,16 @@
+
 import React from 'react';
 import { Brain, MessageCircle, Menu, X } from 'lucide-react';
+import TabNavigation from './TabNavigation';
 
 const Header = ({ 
   onShowFeedback, 
   mobileMenuOpen, 
-  setMobileMenuOpen, 
-  children // For mobile menu content 
+  setMobileMenuOpen,
+  activeTab,
+  setActiveTab,
+  historyCount,
+  favoritesCount
 }) => {
   return (
     <header className="bg-black/20 backdrop-blur-sm border-b border-white/10">
@@ -39,7 +44,15 @@ const Header = ({
 
       {mobileMenuOpen && (
         <div className="md:hidden bg-black/40 backdrop-blur-sm border-t border-white/10">
-          {children}
+          <TabNavigation
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            historyCount={historyCount}
+            favoritesCount={favoritesCount}
+            onShowFeedback={onShowFeedback}
+            setMobileMenuOpen={setMobileMenuOpen}
+            isMobile={true}
+          />
         </div>
       )}
     </header>

@@ -15,7 +15,8 @@ const TabNavigation = ({
   historyCount, 
   favoritesCount,
   onShowFeedback,
-  setMobileMenuOpen
+  setMobileMenuOpen,
+  isMobile = false
 }) => {
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
@@ -24,7 +25,7 @@ const TabNavigation = ({
     }
   };
 
-  const TabButton = ({ tab, isMobile = false }) => (
+  const TabButton = ({ tab }) => (
     <button
       onClick={() => handleTabClick(tab.id)}
       className={`${isMobile ? 'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all' : 'flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium relative'} ${
@@ -48,12 +49,11 @@ const TabNavigation = ({
     </button>
   );
 
-  // Mobile version - only render when called from mobile context
-  if (setMobileMenuOpen) {
+  if (isMobile) {
     return (
       <div className="container mx-auto px-4 py-4 space-y-3">
         {tabs.map(tab => (
-          <TabButton key={`mobile-${tab.id}`} tab={tab} isMobile={true} />
+          <TabButton key={`mobile-${tab.id}`} tab={tab} />
         ))}
         <div className="border-t border-white/10 pt-3">
           <button
@@ -71,14 +71,13 @@ const TabNavigation = ({
     );
   }
 
-  // Desktop version
   return (
     <div className="bg-black/10 backdrop-blur-sm border-b border-white/10">
       <div className="container mx-auto px-4">
         <div className="flex justify-center">
           <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
             {tabs.map(tab => (
-              <TabButton key={`desktop-${tab.id}`} tab={tab} isMobile={false} />
+              <TabButton key={`desktop-${tab.id}`} tab={tab} />
             ))}
           </div>
         </div>
@@ -88,3 +87,4 @@ const TabNavigation = ({
 };
 
 export default TabNavigation;
+ 

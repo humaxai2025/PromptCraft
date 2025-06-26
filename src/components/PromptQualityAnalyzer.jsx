@@ -1,61 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Coffee, Brain, Star, History, Heart, BookOpen, Save } from 'lucide-react';
+import { 
+  CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
+  Zap, Copy, Wand2, Coffee, MessageCircle
+} from 'lucide-react';
 
 // Components
-import Header from './header';
-import AnalyzerTab from './AnalyzerTab';
-import LearnTab from './LearnTab';
-import TemplatesTab from './TemplatesTab';
-import HistoryTab from './HistoryTab';
-import FavoritesTab from './FavoritesTab';
 import FeedbackModal from './FeedbackModal';
 import { CopySuccessNotification, FeedbackSubmittedNotification } from './Notifications';
 
-// Hooks and Utils
-import { useLocalStorage, usePromptHistory, useFavorites, useCompletedLessons } from '../hooks/useLocalStorage';
+// Utils
 import { analyzePrompt } from '../utils/promptAnalyzer';
 import { optimizePrompt } from '../utils/promptOptimizer';
 
 const INDUSTRY_STANDARD = 85;
 
 function PromptQualityAnalyzer() {
-  const [activeTab, setActiveTab] = useState('analyzer');
   const [prompt, setPrompt] = useState('');
   const [analysis, setAnalysis] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [forceRefresh, setForceRefresh] = useState(0); // Force refresh counter
   
   // Notifications
   const [copySuccess, setCopySuccess] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-  const [savedToHistory, setSavedToHistory] = useState(false);
   
   // Feedback Modal
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
-  
-  // Templates
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  // Custom hooks
-  const { history, addToHistory, removeFromHistory, clearHistory } = usePromptHistory();
-  const { favorites, addToFavorites, removeFromFavorites, isFavorited, toggleFavorite, clearFavorites } = useFavorites();
-  const { completedLessons, markLessonComplete } = useCompletedLessons();
-
-  // Force refresh function
-  const triggerRefresh = () => {
-    setForceRefresh(prev => prev + 1);
-    // Emit custom event for cross-component communication
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('promptAnalyzer_refresh'));
-    }, 10);
-  };
-
-  // Enhanced toggle favorite with refresh
-  const handleToggleFavorite = (item, type) => {
-    toggleFavorite(item, type);
-    triggerRefresh(); // Force refresh after toggling
-  };
 
   // Copy to clipboard functionality
   const copyToClipboard = async (text = prompt) => {
@@ -66,23 +35,6 @@ function PromptQualityAnalyzer() {
     } catch (err) {
       console.error('Failed to copy: ', err);
     }
-  };
-
-  // Manual save to history function with refresh
-  const saveToHistory = () => {
-    if (prompt.trim() && analysis) {
-      addToHistory(prompt.trim(), analysis);
-      setSavedToHistory(true);
-      setTimeout(() => setSavedToHistory(false), 2000);
-      triggerRefresh(); // Force refresh after saving
-    }
-  };
-
-  // Template application
-  const applyTemplate = (template) => {
-    setPrompt(template.template);
-    setActiveTab('analyzer');
-    setMobileMenuOpen(false);
   };
 
   // Optimization handler
@@ -96,11 +48,6 @@ function PromptQualityAnalyzer() {
     }
   };
 
-  const handleLoadPrompt = (promptText) => {
-    setPrompt(promptText);
-    setActiveTab('analyzer');
-  };
-
   // Feedback submission
   const submitFeedback = () => {
     setFeedbackSubmitted(true);
@@ -109,244 +56,245 @@ function PromptQualityAnalyzer() {
     setTimeout(() => setFeedbackSubmitted(false), 3000);
   };
 
-  // Learn tab handlers
-  const tryExample = (exampleText) => {
-    setPrompt(exampleText);
-    setActiveTab('analyzer');
-  };
-
-  const navigateToTemplates = () => {
-    setActiveTab('templates');
-  };
-
-  // Real-time analysis effect (no auto-save)
+  // Real-time analysis effect
   useEffect(() => {
     const newAnalysis = analyzePrompt(prompt);
     setAnalysis(newAnalysis);
-    // Manual save only - user controls when to save to history
   }, [prompt]);
 
-  // Force re-render when favorites change to sync heart icon state
-  useEffect(() => {
-    // This effect runs whenever favorites array changes
-    // Forces the AnalyzerTab to re-check isFavorited status
-  }, [favorites]);
-
-  // Ensure proper state sync when switching tabs
-  useEffect(() => {
-    // Force a refresh of components when returning from favorites tab
-    if (activeTab === 'analyzer') {
-      // Force re-evaluation of favorite status
-      triggerRefresh();
-    }
-  }, [activeTab, favorites.length, history.length]); // React to data changes
-
-  // Listen for localStorage changes (for cross-tab sync)
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'promptAnalyzer_favorites' || e.key === 'promptAnalyzer_history') {
-        triggerRefresh(); // Force refresh when localStorage changes
-      }
-    };
-
-    // Also listen for custom events (for same-tab changes)
-    const handleCustomRefresh = () => {
-      triggerRefresh();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('promptAnalyzer_refresh', handleCustomRefresh);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('promptAnalyzer_refresh', handleCustomRefresh);
-    };
-  }, []);
-
-  // Handle tab switching
-  const handleTabSwitch = (tabId) => {
-    setActiveTab(tabId);
-    setMobileMenuOpen(false);
-    // Small delay to ensure state updates properly
-    setTimeout(() => {
-      triggerRefresh();
-    }, 50);
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'from-emerald-500 to-green-400';
+    if (score >= 60) return 'from-yellow-500 to-orange-400';
+    return 'from-red-500 to-pink-400';
   };
 
-  // Render current tab content
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'analyzer':
-        return (
-          <AnalyzerTab
-            key={`analyzer-${forceRefresh}-${favorites.length}-${activeTab}`}
-            prompt={prompt}
-            setPrompt={setPrompt}
-            analysis={analysis}
-            onOptimize={handleOptimize}
-            onCopyToClipboard={copyToClipboard}
-            onToggleFavorite={handleToggleFavorite}
-            isFavorited={isFavorited}
-            onSaveToHistory={saveToHistory}
-            INDUSTRY_STANDARD={INDUSTRY_STANDARD}
-          />
-        );
-      
-      case 'templates':
-        return (
-          <TemplatesTab
-            key={`templates-${forceRefresh}`}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            onApplyTemplate={applyTemplate}
-            onToggleFavorite={handleToggleFavorite}
-            isFavorited={isFavorited}
-          />
-        );
-      
-      case 'history':
-        return (
-          <HistoryTab
-            key={`history-${forceRefresh}-${history.length}`}
-            onLoadPrompt={handleLoadPrompt}
-            onCopySuccess={() => setCopySuccess(true)}
-            onRefresh={triggerRefresh}
-          />
-        );
-      
-      case 'favorites':
-        return (
-          <FavoritesTab
-            key={`favorites-${forceRefresh}-${favorites.length}`}
-            onLoadPrompt={handleLoadPrompt}
-            onCopySuccess={() => setCopySuccess(true)}
-            onLoadTemplate={applyTemplate}
-            onRefresh={triggerRefresh}
-          />
-        );
-      
-      case 'learn':
-        return (
-          <LearnTab
-            key={`learn-${forceRefresh}`}
-            completedLessons={completedLessons}
-            onLessonComplete={markLessonComplete}
-            onTryExample={tryExample}
-            onNavigateToTemplates={navigateToTemplates}
-          />
-        );
-      
-      default:
-        return (
-          <div className="text-center text-white p-8">
-            <h2 className="text-xl mb-4">Unknown tab: {activeTab}</h2>
-            <button 
-              onClick={() => handleTabSwitch('analyzer')} 
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-all"
-            >
-              Go to Analyzer
-            </button>
-          </div>
-        );
-    }
+  const getScoreIcon = (score) => {
+    if (score >= 80) return <CheckCircle className="w-5 h-5 text-emerald-400" />;
+    if (score >= 60) return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+    return <XCircle className="w-5 h-5 text-red-400" />;
+  };
+
+  const getSuggestionIcon = (type) => {
+    if (type === 'error') return <XCircle className="w-4 h-4 text-red-400" />;
+    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+    return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="relative z-10">
         {/* Header */}
-        <Header
-          onShowFeedback={() => setShowFeedback(true)}
-          mobileMenuOpen={mobileMenuOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
-        >
-          {/* Mobile Menu Content */}
-          <div className="container mx-auto px-4 py-4 space-y-3" key={`mobile-nav-${forceRefresh}`}>
-            {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
-              <button
-                key={tabId}
-                onClick={() => handleTabSwitch(tabId)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  activeTab === tabId 
-                    ? 'bg-purple-600 text-white shadow-lg' 
-                    : 'text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                {tabId === 'analyzer' && <Brain className="w-5 h-5" />}
-                {tabId === 'templates' && <Star className="w-5 h-5" />}
-                {tabId === 'history' && <History className="w-5 h-5" />}
-                {tabId === 'favorites' && <Heart className="w-5 h-5" />}
-                {tabId === 'learn' && <BookOpen className="w-5 h-5" />}
-                <span className="capitalize">{tabId}</span>
-                {tabId === 'history' && history.length > 0 && (
-                  <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                    {history.length}
-                  </span>
-                )}
-                {tabId === 'favorites' && favorites.length > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                    {favorites.length}
-                  </span>
-                )}
-              </button>
-            ))}
-            <div className="border-t border-white/10 pt-3">
-              <button
-                onClick={() => {
-                  setShowFeedback(true);
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Send Feedback
-              </button>
-            </div>
-          </div>
-        </Header>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:block bg-black/10 backdrop-blur-sm border-b border-white/10" key={`desktop-nav-${forceRefresh}`}>
-          <div className="container mx-auto px-4">
-            <div className="flex justify-center">
-              <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
-                {['analyzer', 'templates', 'history', 'favorites', 'learn'].map(tabId => (
-                  <button
-                    key={tabId}
-                    onClick={() => handleTabSwitch(tabId)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-medium ${
-                      activeTab === tabId 
-                        ? 'bg-purple-600 text-white shadow-lg' 
-                        : 'text-slate-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {tabId === 'analyzer' && <Brain className="w-5 h-5" />}
-                    {tabId === 'templates' && <Star className="w-5 h-5" />}
-                    {tabId === 'history' && <History className="w-5 h-5" />}
-                    {tabId === 'favorites' && <Heart className="w-5 h-5" />}
-                    {tabId === 'learn' && <BookOpen className="w-5 h-5" />}
-                    <span className="capitalize">{tabId}</span>
-                    {tabId === 'history' && history.length > 0 && (
-                      <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full ml-1">
-                        {history.length}
-                      </span>
-                    )}
-                    {tabId === 'favorites' && favorites.length > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">
-                        {favorites.length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+        <header className="bg-black/20 backdrop-blur-sm border-b border-white/10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Brain className="w-8 h-8 text-purple-400" />
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Prompt Quality Analyzer
+                </h1>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowFeedback(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Feedback
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8 max-w-7xl">
-          <div key={`main-content-${activeTab}-${forceRefresh}`}>
-            {renderTabContent()}
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Analyze Your Prompts</h2>
+              <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto">
+                Get real-time feedback on clarity, specificity, and effectiveness.
+              </p>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Input Section */}
+              <div className="space-y-6">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="w-6 h-6 text-purple-400" />
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      {analysis && analysis.overallScore >= INDUSTRY_STANDARD ? (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          ✨ Optimized!
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleOptimize}
+                          disabled={!prompt.trim()}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:bg-slate-600 text-white rounded-xl transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                          ✨ Optimize
+                        </button>
+                      )}
+                      <button
+                        onClick={() => copyToClipboard(prompt)}
+                        disabled={!prompt.trim()}
+                        className="p-2 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-700 text-white rounded-lg transition-colors"
+                        title="Copy prompt"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Enter your prompt here...
+
+Example: You are a senior marketing strategist. Analyze the following campaign data and provide 3 specific recommendations for improving conversion rates. Focus on actionable insights that can be implemented within 30 days."
+                    className="w-full h-48 sm:h-64 bg-slate-800/50 border border-slate-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200 text-sm sm:text-base"
+                  />
+                  
+                  {analysis && (
+                    <div className="mt-4 text-xs sm:text-sm text-slate-400">
+                      <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pro Tips */}
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-5 h-5 text-blue-400" />
+                    <h4 className="font-semibold text-white text-base sm:text-lg">Pro Tips</h4>
+                  </div>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    <li>✨ Start with a clear role: "You are an expert..."</li>
+                    <li>🎯 Be specific about output format and length</li>
+                    <li>📝 Include examples when possible</li>
+                    <li>⚡ Use action words: analyze, create, summarize</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Analysis Section */}
+              <div className="space-y-6">
+                {analysis ? (
+                  <>
+                    {/* Quality Score */}
+                    <div className={'bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 border ' + (analysis.overallScore >= INDUSTRY_STANDARD ? 'border-green-500/50 bg-green-500/5' : 'border-white/10')}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white">Quality Score</h3>
+                        <div className="flex items-center gap-2">
+                          {getScoreIcon(analysis.overallScore)}
+                          {analysis.overallScore >= INDUSTRY_STANDARD && (
+                            <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full font-medium">
+                              Industry Standard
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className={'text-3xl sm:text-4xl font-bold ' + (analysis.overallScore >= INDUSTRY_STANDARD ? 'text-green-400' : 'text-white')}>
+                            {analysis.overallScore}
+                          </span>
+                          <div className="text-right">
+                            <span className="text-slate-400 text-base sm:text-lg">/100</span>
+                            {analysis.overallScore >= INDUSTRY_STANDARD ? (
+                              <div className="text-green-400 text-xs font-medium mt-1">🏆 Professional Quality</div>
+                            ) : (
+                              <div className="text-yellow-400 text-xs mt-1">{INDUSTRY_STANDARD - analysis.overallScore} to industry standard</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-full bg-slate-700 rounded-full h-3 sm:h-4 overflow-hidden relative">
+                          <div
+                            className={'h-full bg-gradient-to-r ' + getScoreColor(analysis.overallScore) + ' transition-all duration-1000 ease-out'}
+                            style={{ width: analysis.overallScore + '%' }}
+                          />
+                          <div
+                            className="absolute top-0 w-px h-full bg-yellow-400 opacity-50"
+                            style={{ left: '85%' }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-400 mt-2">
+                          <span>Basic</span>
+                          <span className="text-yellow-400">Industry Standard ({INDUSTRY_STANDARD})</span>
+                          <span>Perfect</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Breakdown */}
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10">
+                      <h4 className="text-base sm:text-lg font-semibold text-white mb-4">Detailed Breakdown</h4>
+                      <div className="space-y-4">
+                        {Object.entries(analysis.scores).map(([key, score]) =>
+                          <div key={key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-white capitalize font-medium text-sm sm:text-base">{key}</span>
+                              <span className="text-slate-300 font-mono text-sm sm:text-base">{score}/100</span>
+                            </div>
+                            <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={'h-full bg-gradient-to-r ' + getScoreColor(score) + ' transition-all duration-700 ease-out'}
+                                style={{ width: score + '%' }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Suggestions */}
+                    {analysis.suggestions.length > 0 && (
+                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Target className="w-5 h-6 text-purple-400" />
+                          <h4 className="text-base sm:text-lg font-semibold text-white">Suggestions</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {analysis.suggestions.map((suggestion, index) =>
+                            <div key={index} className="bg-slate-800/50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-slate-600">
+                              <div className="flex items-start gap-3">
+                                {getSuggestionIcon(suggestion.type)}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-white text-sm sm:text-base">{suggestion.category}</span>
+                                  </div>
+                                  <p className="text-slate-300 text-xs sm:text-sm mb-2">{suggestion.text}</p>
+                                  {suggestion.example && (
+                                    <div className="bg-slate-700/50 rounded-lg p-2 sm:p-3 border-l-2 border-purple-400">
+                                      <p className="text-xs text-slate-400 mb-1">Example:</p>
+                                      <p className="text-xs sm:text-sm text-slate-300">{suggestion.example}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-8 sm:p-12 border border-white/10 text-center">
+                    <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
+                    <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">Ready to Analyze</h4>
+                    <p className="text-slate-500 text-sm sm:text-base">Start typing your prompt to see real-time analysis and suggestions.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </main>
 
@@ -384,14 +332,6 @@ function PromptQualityAnalyzer() {
         </footer>
       </div>
 
-      {/* Mobile Feedback Button */}
-      <button
-        onClick={() => setShowFeedback(true)}
-        className="md:hidden fixed bottom-6 right-6 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-40"
-      >
-        <MessageCircle className="w-5 h-5" />
-      </button>
-
       {/* Modals and Notifications */}
       <FeedbackModal
         isOpen={showFeedback}
@@ -410,22 +350,6 @@ function PromptQualityAnalyzer() {
         isVisible={feedbackSubmitted}
         onClose={() => setFeedbackSubmitted(false)}
       />
-
-      {/* Saved to History Notification */}
-      {savedToHistory && (
-        <div 
-          className="fixed top-6 right-6 z-50 transform transition-all duration-300 ease-out"
-          onClick={() => setSavedToHistory(false)}
-        >
-          <div 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl backdrop-blur-sm border border-blue-400/30 flex items-center gap-3 hover:scale-105 transition-transform cursor-pointer"
-          >
-            <Save className="w-5 h-5 text-blue-200" />
-            <span className="font-medium text-sm sm:text-base">💾 Saved to history!</span>
-            <div className="w-2 h-2 bg-blue-300 rounded-full animate-ping" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
