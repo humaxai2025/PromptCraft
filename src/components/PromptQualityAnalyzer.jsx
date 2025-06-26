@@ -14,7 +14,7 @@ import { optimizePrompt } from '../utils/promptOptimizer';
 
 const INDUSTRY_STANDARD = 85;
 
-function PromptQualityAnalyzer() {
+function PromptCraft() {
   const [prompt, setPrompt] = useState('');
   const [analysis, setAnalysis] = useState(null);
   
@@ -90,7 +90,7 @@ function PromptQualityAnalyzer() {
               <div className="flex items-center gap-3">
                 <Brain className="w-8 h-8 text-purple-400" />
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Prompt Quality Analyzer
+                  Prompt Craft
                 </h1>
               </div>
               
@@ -111,7 +111,7 @@ function PromptQualityAnalyzer() {
         <main className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="space-y-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Analyze Your Prompts</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Craft Better Prompts</h2>
               <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto">
                 Get real-time feedback on clarity, specificity, and effectiveness.
               </p>
@@ -289,7 +289,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                 ) : (
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-8 sm:p-12 border border-white/10 text-center">
                     <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
-                    <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">Ready to Analyze</h4>
+                    <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">Ready to Craft</h4>
                     <p className="text-slate-500 text-sm sm:text-base">Start typing your prompt to see real-time analysis and suggestions.</p>
                   </div>
                 )}
@@ -354,4 +354,4 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
   );
 }
 
-export default PromptQualityAnalyzer;
+export default PromptCraft;
