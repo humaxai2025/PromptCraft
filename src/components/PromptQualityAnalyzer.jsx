@@ -43,8 +43,8 @@ function PromptCraft() {
     // Remove existing model-specific prefixes from other models
     const prefixesToRemove = Object.values(aiModels).map(model => model.style.prefix);
     prefixesToRemove.forEach(prefix => {
-      const cleanPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\  // Handle AI model change with visual feedback
-  const handleModelChange = (newModel) => {
+    const cleanPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\  // Handle AI model change with visual feedback')
+    const handleModelChange = (newModel) => {
     const oldModel = aiModels[selectedAIModel];
     const newModelInfo = aiModels[newModel];
     
