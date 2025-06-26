@@ -22,6 +22,7 @@ function PromptCraft() {
   const [sessionHistory, setSessionHistory] = useState([]); // Session prompt history
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('chatgpt'); // AI model selector
+  const [modelChangeNotification, setModelChangeNotification] = useState(''); // Model change feedback
   
   // Notifications
   const [copySuccess, setCopySuccess] = useState(false);
@@ -31,15 +32,147 @@ function PromptCraft() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
 
-  // AI Model configurations
+  // AI Model configurations with optimization styles
   const aiModels = {
-    chatgpt: { name: 'ChatGPT', maxChars: 8000, maxWords: 300, color: 'bg-green-600' },
-    claude: { name: 'Claude', maxChars: 12000, maxWords: 300, color: 'bg-orange-600' },
-    gemini: { name: 'Gemini', maxChars: 6000, maxWords: 300, color: 'bg-blue-600' },
-    generic: { name: 'Generic', maxChars: 4000, maxWords: 300, color: 'bg-purple-600' }
+    chatgpt: { 
+      name: 'ChatGPT', 
+      maxChars: 8000, 
+      maxWords: 300, 
+      color: 'bg-green-600', 
+      accent: 'text-green-400',
+      style: {
+        prefix: 'You are ChatGPT, a helpful AI assistant. Please',
+        structure: 'conversational',
+        emphasis: 'clarity and step-by-step reasoning',
+        suffix: '\n\nPlease provide a clear, structured response with specific examples where helpful.'
+      }
+    },
+    claude: { 
+      name: 'Claude', 
+      maxChars: 12000, 
+      maxWords: 300, 
+      color: 'bg-orange-600', 
+      accent: 'text-orange-400',
+      style: {
+        prefix: 'You are Claude, an AI assistant created by Anthropic. Your task is to',
+        structure: 'analytical',
+        emphasis: 'thoughtful analysis and comprehensive insights',
+        suffix: '\n\n**Approach:** Think through this systematically and provide nuanced, well-reasoned insights.'
+      }
+    },
+    gemini: { 
+      name: 'Gemini', 
+      maxChars: 6000, 
+      maxWords: 300, 
+      color: 'bg-blue-600', 
+      accent: 'text-blue-400',
+      style: {
+        prefix: 'As Google\'s Gemini AI, leverage your multimodal capabilities to',
+        structure: 'creative',
+        emphasis: 'innovative solutions and creative approaches',
+        suffix: '\n\n**Creative Focus:** Explore innovative angles and provide fresh perspectives.'
+      }
+    },
+    generic: { 
+      name: 'Generic', 
+      maxChars: 4000, 
+      maxWords: 300, 
+      color: 'bg-purple-600', 
+      accent: 'text-purple-400',
+      style: {
+        prefix: 'You are an expert AI assistant. Please',
+        structure: 'professional',
+        emphasis: 'professional expertise and actionable insights',
+        suffix: '\n\n**Deliverable:** Provide professional-grade analysis with actionable recommendations.'
+      }
+    }
   };
 
-  // Tone detector
+  // Optimize prompt for specific AI model
+  const optimizeForModel = (originalPrompt, targetModel) => {
+    if (!originalPrompt.trim()) return originalPrompt;
+    
+    const modelConfig = aiModels[targetModel];
+    let optimizedPrompt = originalPrompt.trim();
+    
+    // Remove existing model-specific prefixes from other models
+    const prefixesToRemove = Object.values(aiModels).map(model => model.style.prefix);
+    prefixesToRemove.forEach(prefix => {
+      const cleanPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\  // Handle AI model change with visual feedback
+  const handleModelChange = (newModel) => {
+    const oldModel = aiModels[selectedAIModel];
+    const newModelInfo = aiModels[newModel];
+    
+    setSelectedAIModel(newModel);
+    
+    // Show notification
+    setModelChangeNotification(`Switched to ${newModelInfo.name} (Max: ${newModelInfo.maxWords} words)`);
+    setTimeout(() => setModelChangeNotification(''), 3000);
+    
+    // If current prompt exceeds new model's limits, truncate it
+    if (prompt.trim()) {
+      const words = prompt.trim().split(/\s+/).filter(word => word.length > 0);
+      if (words.length > newModelInfo.maxWords) {
+        const limitedWords = words.slice(0, newModelInfo.maxWords);
+        const limitedText = limitedWords.join(' ');
+        setPrompt(limitedText);
+      }
+    }
+  };'); // Escape regex chars
+      const regex = new RegExp(`^${cleanPrefix}\\s*`, 'i');
+      optimizedPrompt = optimizedPrompt.replace(regex, '');
+    });
+    
+    // Remove existing suffixes
+    const suffixesToRemove = Object.values(aiModels).map(model => model.style.suffix);
+    suffixesToRemove.forEach(suffix => {
+      if (suffix && optimizedPrompt.includes(suffix.trim())) {
+        optimizedPrompt = optimizedPrompt.replace(suffix.trim(), '').trim();
+      }
+    });
+    
+    // Clean up the core prompt (remove any "You are" beginnings if they're generic)
+    optimizedPrompt = optimizedPrompt.replace(/^(You are an? )?(expert )?AI assistant\.?\s*/i, '');
+    optimizedPrompt = optimizedPrompt.replace(/^(Please )?/i, '');
+    
+    // Build the optimized prompt with model-specific elements
+    let newPrompt = modelConfig.style.prefix + ' ' + optimizedPrompt;
+    
+    // Add model-specific suffix
+    if (modelConfig.style.suffix) {
+      newPrompt += modelConfig.style.suffix;
+    }
+    
+    // Ensure it fits within word limits
+    const words = newPrompt.trim().split(/\s+/).filter(word => word.length > 0);
+    if (words.length > modelConfig.maxWords) {
+      const limitedWords = words.slice(0, modelConfig.maxWords);
+      newPrompt = limitedWords.join(' ');
+    }
+    
+    return newPrompt;
+  };
+
+  // Handle AI model change with prompt optimization
+  const handleModelChange = (newModel) => {
+    const oldModel = aiModels[selectedAIModel];
+    const newModelInfo = aiModels[newModel];
+    
+    setSelectedAIModel(newModel);
+    
+    // Optimize prompt for the new model
+    if (prompt.trim()) {
+      const optimizedPrompt = optimizeForModel(prompt, newModel);
+      setPrompt(optimizedPrompt);
+      
+      // Show notification about optimization
+      setModelChangeNotification(`Optimized for ${newModelInfo.name} - Prompt adapted for better ${newModelInfo.style.emphasis}`);
+    } else {
+      setModelChangeNotification(`Switched to ${newModelInfo.name} (Max: ${newModelInfo.maxWords} words)`);
+    }
+    
+    setTimeout(() => setModelChangeNotification(''), 4000);
+  };
   const detectTone = (text) => {
     if (!text.trim()) return null;
     
@@ -363,7 +496,7 @@ Generated by Prompt Craft - https://promptcraft.app`;
         setPrompt(limitedText);
       }
     }
-  }, [selectedAIModel]);
+  }, []); // Remove selectedAIModel dependency since we handle it in handleModelChange
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -435,6 +568,42 @@ Generated by Prompt Craft - https://promptcraft.app`;
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Input Section */}
               <div className="space-y-6">
+                {/* AI Model Selector - Moved to top */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Settings className="w-5 h-5 text-purple-400" />
+                      <h4 className="text-white font-medium">Target AI Model</h4>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedAIModel}
+                        onChange={(e) => handleModelChange(e.target.value)}
+                        className={`px-4 py-2 ${aiModels[selectedAIModel].color} hover:opacity-90 text-white rounded-lg transition-all text-sm border-none focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium`}
+                      >
+                        {Object.entries(aiModels).map(([key, model]) => (
+                          <option key={key} value={key} className="bg-slate-800 text-white">
+                            {model.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className={`text-sm ${aiModels[selectedAIModel].accent} font-medium`}>
+                        Max: {aiModels[selectedAIModel].maxWords} words
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Model change notification */}
+                  {modelChangeNotification && (
+                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-400 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="font-medium">{modelChangeNotification}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
@@ -442,20 +611,6 @@ Generated by Prompt Craft - https://promptcraft.app`;
                       <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {/* AI Model Selector */}
-                      <select
-                        value={selectedAIModel}
-                        onChange={(e) => setSelectedAIModel(e.target.value)}
-                        className={`flex items-center gap-2 px-3 py-2 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm border-none focus:outline-none focus:ring-2 focus:ring-purple-500 ${aiModels[selectedAIModel].color}`}
-                        title={`Optimized for ${aiModels[selectedAIModel].name} (Max: ${aiModels[selectedAIModel].maxWords} words)`}
-                      >
-                        {Object.entries(aiModels).map(([key, model]) => (
-                          <option key={key} value={key} className="bg-slate-800 text-white">
-                            {model.name} (Max: {model.maxWords} words)
-                          </option>
-                        ))}
-                      </select>
-                      
                       {/* Session History Dropdown */}
                       {sessionHistory.length > 0 && (
                         <div className="relative history-dropdown">
@@ -692,7 +847,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     <li>🎯 Be specific about output format and length</li>
                     <li>📝 Include examples when possible</li>
                     <li>⚡ Use action words: analyze, create, summarize</li>
-                    <li>🤖 Select your target AI model for optimal length limits</li>
+                    <li>🤖 Select your target AI model - prompts auto-optimize for each model's strengths</li>
                     <li>🔧 Use quick fix buttons for instant improvements</li>
                   </ul>
                 </div>
