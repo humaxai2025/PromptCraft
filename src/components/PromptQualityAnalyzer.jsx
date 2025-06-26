@@ -63,7 +63,7 @@ function PromptCraft() {
         setPrompt(limitedText);
       }
     }
-  };'); // Escape regex chars
+  };
       const regex = new RegExp(`^${cleanPrefix}\\s*`, 'i');
       optimizedPrompt = optimizedPrompt.replace(regex, '');
     });
