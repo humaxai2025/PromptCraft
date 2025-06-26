@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
-  Zap, Copy, Wand2, Coffee, MessageCircle
+  Zap, Copy, Wand2, Coffee, MessageCircle, RotateCcw, Trash2
 } from 'lucide-react';
 
 // Components
@@ -16,6 +16,7 @@ const INDUSTRY_STANDARD = 85;
 
 function PromptCraft() {
   const [prompt, setPrompt] = useState('');
+  const [previousPrompt, setPreviousPrompt] = useState(''); // For undo functionality
   const [analysis, setAnalysis] = useState(null);
   
   // Notifications
@@ -37,15 +38,48 @@ function PromptCraft() {
     }
   };
 
+  // Clear/Reset functionality
+  const clearPrompt = () => {
+    setPrompt('');
+    setPreviousPrompt('');
+  };
+
+  // Undo optimization functionality
+  const undoOptimization = () => {
+    if (previousPrompt) {
+      setPrompt(previousPrompt);
+      setPreviousPrompt('');
+    }
+  };
+
   // Optimization handler
   const handleOptimize = () => {
     if (!prompt.trim()) return;
+    
+    // Store current prompt for undo functionality
+    setPreviousPrompt(prompt);
     
     const optimizationResult = optimizePrompt(prompt, INDUSTRY_STANDARD);
     
     if (optimizationResult) {
       setPrompt(optimizationResult.optimizedPrompt);
     }
+  };
+
+  // Get word/character recommendations
+  const getRecommendations = () => {
+    if (!analysis) return null;
+    
+    const words = analysis.stats.words;
+    const chars = analysis.stats.characters;
+    
+    const wordStatus = words < 20 ? 'too-short' : words > 300 ? 'too-long' : words >= 50 && words <= 200 ? 'optimal' : 'good';
+    const charStatus = chars < 100 ? 'too-short' : chars > 2000 ? 'too-long' : chars >= 250 && chars <= 1500 ? 'optimal' : 'good';
+    
+    return {
+      words: { count: words, status: wordStatus, recommendation: '50-200 words optimal' },
+      chars: { count: chars, status: charStatus, recommendation: '250-1500 characters optimal' }
+    };
   };
 
   // Feedback submission
@@ -126,7 +160,17 @@ function PromptCraft() {
                       <MessageSquare className="w-6 h-6 text-purple-400" />
                       <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {previousPrompt && (
+                        <button
+                          onClick={undoOptimization}
+                          className="flex items-center gap-2 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm"
+                          title="Undo last optimization"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Undo
+                        </button>
+                      )}
                       {analysis && analysis.overallScore >= INDUSTRY_STANDARD ? (
                         <div className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium">
                           <CheckCircle className="w-4 h-4" />
@@ -150,6 +194,14 @@ function PromptCraft() {
                       >
                         <Copy className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={clearPrompt}
+                        disabled={!prompt.trim()}
+                        className="p-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 text-white rounded-lg transition-colors"
+                        title="Clear prompt"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                   
@@ -163,8 +215,34 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                   />
                   
                   {analysis && (
-                    <div className="mt-4 text-xs sm:text-sm text-slate-400">
-                      <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences</span>
+                    <div className="mt-4 space-y-2">
+                      <div className="text-xs sm:text-sm text-slate-400">
+                        <span>{analysis.stats.words} words • {analysis.stats.sentences} sentences • {analysis.stats.characters} characters</span>
+                      </div>
+                      
+                      {(() => {
+                        const recommendations = getRecommendations();
+                        if (!recommendations) return null;
+                        
+                        return (
+                          <div className="flex flex-wrap gap-3 text-xs">
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                              recommendations.words.status === 'optimal' ? 'bg-green-500/20 text-green-400' :
+                              recommendations.words.status === 'good' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              <span>📝 {recommendations.words.recommendation}</span>
+                            </div>
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                              recommendations.chars.status === 'optimal' ? 'bg-green-500/20 text-green-400' :
+                              recommendations.chars.status === 'good' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              <span>📏 {recommendations.chars.recommendation}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
