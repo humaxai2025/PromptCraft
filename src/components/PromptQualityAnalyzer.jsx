@@ -32,59 +32,35 @@ function PromptCraft() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
 
-  // AI Model configurations with optimization styles
+  // AI Model configurations - simplified
   const aiModels = {
     chatgpt: { 
       name: 'ChatGPT', 
       maxChars: 8000, 
       maxWords: 300, 
       color: 'bg-green-600', 
-      accent: 'text-green-400',
-      style: {
-        prefix: 'You are ChatGPT, a helpful AI assistant. Please',
-        structure: 'conversational',
-        emphasis: 'clarity and step-by-step reasoning',
-        suffix: '\n\nPlease provide a clear, structured response with specific examples where helpful.'
-      }
+      accent: 'text-green-400'
     },
     claude: { 
       name: 'Claude', 
       maxChars: 12000, 
       maxWords: 300, 
       color: 'bg-orange-600', 
-      accent: 'text-orange-400',
-      style: {
-        prefix: 'You are Claude, an AI assistant created by Anthropic. Your task is to',
-        structure: 'analytical',
-        emphasis: 'thoughtful analysis and comprehensive insights',
-        suffix: '\n\n**Approach:** Think through this systematically and provide nuanced, well-reasoned insights.'
-      }
+      accent: 'text-orange-400'
     },
     gemini: { 
       name: 'Gemini', 
       maxChars: 6000, 
       maxWords: 300, 
       color: 'bg-blue-600', 
-      accent: 'text-blue-400',
-      style: {
-        prefix: 'As Google\'s Gemini AI, leverage your multimodal capabilities to',
-        structure: 'creative',
-        emphasis: 'innovative solutions and creative approaches',
-        suffix: '\n\n**Creative Focus:** Explore innovative angles and provide fresh perspectives.'
-      }
+      accent: 'text-blue-400'
     },
     generic: { 
       name: 'Generic', 
       maxChars: 4000, 
       maxWords: 300, 
       color: 'bg-purple-600', 
-      accent: 'text-purple-400',
-      style: {
-        prefix: 'You are an expert AI assistant. Please',
-        structure: 'professional',
-        emphasis: 'professional expertise and actionable insights',
-        suffix: '\n\n**Deliverable:** Provide professional-grade analysis with actionable recommendations.'
-      }
+      accent: 'text-purple-400'
     }
   };
 
@@ -847,7 +823,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
                     <li>🎯 Be specific about output format and length</li>
                     <li>📝 Include examples when possible</li>
                     <li>⚡ Use action words: analyze, create, summarize</li>
-                    <li>🤖 Select your target AI model - prompts auto-optimize for each model's strengths</li>
+                    <li>🤖 Select your target AI model for optimized word limits</li>
                     <li>🔧 Use quick fix buttons for instant improvements</li>
                   </ul>
                 </div>
