@@ -40,7 +40,7 @@ function PromptCraft() {
     // Remove existing model-specific prefixes from other models
     const prefixesToRemove = Object.values(aiModels).map(model => model.style.prefix);
     prefixesToRemove.forEach(prefix => {
-      const cleanPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\  // Handle AI model change with visual feedback
+      const cleanPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\  // Handle AI model change with visual feedback')
   const handleModelChange = (newModel) => {
     const oldModel = aiModels[selectedAIModel];
     const newModelInfo = aiModels[newModel];
@@ -60,7 +60,7 @@ function PromptCraft() {
         setPrompt(limitedText);
       }
     }
-  };'); // Escape regex chars
+  };'); // Escape regex chars'
       const regex = new RegExp(`^${cleanPrefix}\\s*`, 'i');
       optimizedPrompt = optimizedPrompt.replace(regex, '');
     });
