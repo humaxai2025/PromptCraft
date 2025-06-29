@@ -1,12 +1,13 @@
 import React from 'react';
-import { Brain, Star, History, Heart, BookOpen, MessageCircle } from 'lucide-react';
+import { Brain, Star, History, Heart, BookOpen, MessageCircle, BarChart3 } from 'lucide-react';
 
 const tabs = [
   { id: 'analyzer', label: 'Analyzer', icon: Brain },
   { id: 'templates', label: 'Templates', icon: Star },
   { id: 'history', label: 'History', icon: History },
   { id: 'favorites', label: 'Favorites', icon: Heart },
-  { id: 'learn', label: 'Learn', icon: BookOpen }
+  { id: 'learn', label: 'Learn', icon: BookOpen },
+  { id: 'comparison', label: 'Compare', icon: BarChart3, hidden: true } // Hidden by default, shown when needed
 ];
 
 const TabNavigation = ({ 
@@ -16,7 +17,8 @@ const TabNavigation = ({
   favoritesCount,
   onShowFeedback,
   setMobileMenuOpen,
-  isMobile = false
+  isMobile = false,
+  showComparison = false // New prop to control comparison tab visibility
 }) => {
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
@@ -24,6 +26,14 @@ const TabNavigation = ({
       setMobileMenuOpen(false);
     }
   };
+
+  // Filter tabs based on visibility
+  const visibleTabs = tabs.filter(tab => {
+    if (tab.id === 'comparison') {
+      return showComparison; // Only show comparison tab when needed
+    }
+    return true;
+  });
 
   const TabButton = ({ tab }) => (
     <button
@@ -46,13 +56,18 @@ const TabNavigation = ({
           {favoritesCount}
         </span>
       )}
+      {tab.id === 'comparison' && (
+        <span className={`text-white text-xs px-2 py-1 rounded-full ${isMobile ? 'ml-auto bg-green-500' : 'bg-green-500 ml-1'}`}>
+          New
+        </span>
+      )}
     </button>
   );
 
   if (isMobile) {
     return (
       <div className="container mx-auto px-4 py-4 space-y-3">
-        {tabs.map(tab => (
+        {visibleTabs.map(tab => (
           <TabButton key={`mobile-${tab.id}`} tab={tab} />
         ))}
         <div className="border-t border-white/10 pt-3">
@@ -76,7 +91,7 @@ const TabNavigation = ({
       <div className="container mx-auto px-4">
         <div className="flex justify-center">
           <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
-            {tabs.map(tab => (
+            {visibleTabs.map(tab => (
               <TabButton key={`desktop-${tab.id}`} tab={tab} />
             ))}
           </div>
@@ -87,4 +102,3 @@ const TabNavigation = ({
 };
 
 export default TabNavigation;
- 

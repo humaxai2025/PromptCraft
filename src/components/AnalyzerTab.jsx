@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { 
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
-  Zap, Copy, Heart, Wand2, Save
+  Zap, Copy, Heart, Wand2, Save, Star, ArrowRight, Code, Users
 } from 'lucide-react';
 
 const AnalyzerTab = ({ 
@@ -14,7 +14,8 @@ const AnalyzerTab = ({
   isFavorited,
   onSaveToHistory,
   favorites, // Added for state sync
-  INDUSTRY_STANDARD = 85
+  INDUSTRY_STANDARD = 85,
+  onNavigateToTemplates // New prop to handle navigation to templates
 }) => {
   // Check if current prompt is favorited - recalculate on every render
   const isCurrentPromptFavorited = prompt.trim() ? isFavorited(prompt.trim()) : false;
@@ -23,6 +24,7 @@ const AnalyzerTab = ({
   useEffect(() => {
     // This ensures the component responds to favorites state changes
   }, [favorites]);
+
   const getScoreColor = (score) => {
     if (score >= 80) return 'from-emerald-500 to-green-400';
     if (score >= 60) return 'from-yellow-500 to-orange-400';
@@ -41,6 +43,38 @@ const AnalyzerTab = ({
     return <Lightbulb className="w-4 h-4 text-blue-400" />;
   };
 
+  // Quick start templates for immediate use
+  const quickStartExamples = [
+    {
+      title: "Business Analyst",
+      prompt: "You are a senior business analyst with expertise in data-driven decision making. Analyze the following business scenario and provide strategic recommendations with supporting evidence and metrics.",
+      category: "business",
+      for_devs: false
+    },
+    {
+      title: "Code Reviewer",
+      prompt: "You are an experienced software engineer and code reviewer. Review the following code for best practices, potential bugs, security issues, and performance optimizations. Provide specific recommendations for improvement.",
+      category: "development",
+      for_devs: true
+    },
+    {
+      title: "Content Creator",
+      prompt: "You are a creative content strategist with expertise in digital marketing. Create engaging, original content that resonates with the target audience while maintaining brand consistency and driving measurable results.",
+      category: "creative",
+      for_devs: false
+    }
+  ];
+
+  const handleQuickStart = (template) => {
+    setPrompt(template.prompt);
+  };
+
+  const handleBrowseTemplates = () => {
+    if (onNavigateToTemplates) {
+      onNavigateToTemplates();
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -49,6 +83,51 @@ const AnalyzerTab = ({
           Get real-time feedback on clarity, specificity, and effectiveness.
         </p>
       </div>
+      
+      {/* Quick Start Templates - Only show when prompt is empty */}
+      {!prompt.trim() && (
+        <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 mb-8">
+          <div className="text-center mb-6">
+            <Star className="w-8 h-8 text-purple-400 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-white mb-2">Quick Start with Templates</h3>
+            <p className="text-slate-300 text-sm">Choose from 200+ professional prompt templates or start with these popular examples</p>
+          </div>
+          
+          <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            {quickStartExamples.map((template, index) => (
+              <div key={index} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-purple-500/30 transition-all duration-300 group cursor-pointer"
+                   onClick={() => handleQuickStart(template)}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-lg">
+                    {template.for_devs ? <Code className="w-4 h-4 text-purple-400" /> : <Users className="w-4 h-4 text-blue-400" />}
+                  </div>
+                  <h4 className="text-white font-semibold text-sm group-hover:text-purple-300 transition-colors">{template.title}</h4>
+                </div>
+                <p className="text-slate-400 text-xs mb-3 line-clamp-2">{template.prompt.slice(0, 80)}...</p>
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    template.for_devs ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {template.category}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-purple-400 transition-colors" />
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center">
+            <button
+              onClick={handleBrowseTemplates}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <Star className="w-5 h-5" />
+              Browse All 200+ Templates
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Input Section */}
@@ -60,6 +139,16 @@ const AnalyzerTab = ({
                 <h3 className="text-lg sm:text-xl font-semibold text-white">Your Prompt</h3>
               </div>
               <div className="flex gap-2">
+                {/* Browse Templates Button - Show when prompt exists */}
+                {prompt.trim() && (
+                  <button
+                    onClick={handleBrowseTemplates}
+                    className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all duration-300"
+                    title="Browse templates"
+                  >
+                    <Star className="w-4 h-4" />
+                  </button>
+                )}
                 {prompt.trim() && analysis && (
                   <button
                     onClick={() => onToggleFavorite({ prompt: prompt.trim(), analysis }, 'prompt')}
@@ -113,7 +202,9 @@ const AnalyzerTab = ({
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Enter your prompt here...
 
-Example: You are a senior marketing strategist. Analyze the following campaign data and provide 3 specific recommendations for improving conversion rates. Focus on actionable insights that can be implemented within 30 days."
+Example: You are a senior marketing strategist. Analyze the following campaign data and provide 3 specific recommendations for improving conversion rates. Focus on actionable insights that can be implemented within 30 days.
+
+💡 Tip: Click 'Browse All Templates' above to get started with professional prompts!"
               className="w-full h-48 sm:h-64 bg-slate-800/50 border border-slate-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200 text-sm sm:text-base"
             />
             
@@ -136,6 +227,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
               <li>🎯 Be specific about output format and length</li>
               <li>📝 Include examples when possible</li>
               <li>⚡ Use action words: analyze, create, summarize</li>
+              <li>🚀 Browse our template library for inspiration</li>
             </ul>
           </div>
         </div>
@@ -246,7 +338,14 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-8 sm:p-12 border border-white/10 text-center">
               <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500 mx-auto mb-4" />
               <h4 className="text-lg sm:text-xl font-semibold text-slate-400 mb-2">Ready to Analyze</h4>
-              <p className="text-slate-500 text-sm sm:text-base">Start typing your prompt to see real-time analysis and suggestions.</p>
+              <p className="text-slate-500 text-sm sm:text-base mb-4">Start typing your prompt to see real-time analysis and suggestions.</p>
+              <button
+                onClick={handleBrowseTemplates}
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl transition-all font-medium text-sm"
+              >
+                <Star className="w-4 h-4" />
+                Browse Templates
+              </button>
             </div>
           )}
         </div>
