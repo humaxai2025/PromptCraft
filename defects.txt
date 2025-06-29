@@ -1,0 +1,5 @@
+In the compare tab, make sure the original is just the original the user enters in the analyzer tab. This original which as for example 40 score should be compared with the optimized version which will make him realize how much his prompt has been optimized. Pls fix this. 
+
+When I enter the compare tab, "Copied to clipboard" message is coming. That should be displayed only when a user copies the prompt. 
+
+While I clear a prompt from the favourites tab, then in the analyzer tab that favorite icon should default to its original state which is not a favourite, same thing for history tab also, both when cleared, in the analyzer tab still shows as history saved and favorited. 

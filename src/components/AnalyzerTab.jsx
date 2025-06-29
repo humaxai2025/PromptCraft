@@ -3,6 +3,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, Lightbulb, Target, MessageSquare, Brain, 
   Zap, Copy, Heart, Wand2, Save, Star
 } from 'lucide-react';
+import AIEnhancer from './AIEnhancer'; // Add this import
 
 const AnalyzerTab = ({ 
   prompt,
@@ -13,7 +14,7 @@ const AnalyzerTab = ({
   onToggleFavorite,
   isFavorited,
   onSaveToHistory,
-  favorites, // Added for state sync
+  favorites,
   INDUSTRY_STANDARD = 85
 }) => {
   // Check if current prompt is favorited - recalculate on every render
@@ -40,12 +41,6 @@ const AnalyzerTab = ({
     if (type === 'error') return <XCircle className="w-4 h-4 text-red-400" />;
     if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
     return <Lightbulb className="w-4 h-4 text-blue-400" />;
-  };
-
-  const handleBrowseTemplates = () => {
-    if (onNavigateToTemplates) {
-      onNavigateToTemplates();
-    }
   };
 
   return (
@@ -134,6 +129,12 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
             )}
           </div>
 
+          {/* AI ENHANCER - ADD THIS SECTION */}
+          <AIEnhancer 
+            prompt={prompt}
+            onPromptUpdate={setPrompt}
+          />
+
           {/* Pro Tips */}
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/20">
             <div className="flex items-center gap-2 mb-3">
@@ -145,7 +146,7 @@ Example: You are a senior marketing strategist. Analyze the following campaign d
               <li>🎯 Be specific about output format and length</li>
               <li>📝 Include examples when possible</li>
               <li>⚡ Use action words: analyze, create, summarize</li>
-              <li>🔧 Use the optimize button for AI improvements</li>
+              <li>🤖 Try the AI Enhance button for instant improvements</li>
             </ul>
           </div>
         </div>
